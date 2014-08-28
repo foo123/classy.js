@@ -252,25 +252,27 @@
         T_UNDEF = 512,
         T_UNKNOWN = 1024,
         get_type = function( v ) {
-            var type_of = typeOf(v), to_string = toStr(v);
+            var type_of, to_string;
             
-            if ("undefined" === type_of)  return T_UNDEF;
-            
-            else if ("number" === type_of || v instanceof Num)  return isNaN(v) ? T_NAN : T_NUM;
-            
-            else if (null === v)  return T_NULL;
+            if (null === v)  return T_NULL;
             
             else if (true === v || false === v)  return T_BOOL;
             
-            else if (v && ("string" === type_of || v instanceof Str)) return (1 === v.length) ? T_CHAR : T_STR;
+            type_of = typeOf(v); to_string = toStr(v);
             
-            else if (v && ("[object Array]" === to_string || v instanceof Arr))  return T_ARRAY;
+            if (undef === v || "undefined" === type_of)  return T_UNDEF;
             
-            else if (v && ("[object RegExp]" === to_string || v instanceof Regex))  return T_REGEX;
+            else if (v instanceof Num || "number" === type_of)  return isNaN(v) ? T_NAN : T_NUM;
             
-            else if (v && (("function" === type_of && "[object Function]" === to_string) || v instanceof Func))  return T_FUNC;
+            else if (v instanceof Str || "string" === type_of) return (1 === v.length) ? T_CHAR : T_STR;
             
-            else if (v && "[object Object]" === to_string)  return T_OBJ;
+            else if (v instanceof Arr || "[object Array]" === to_string)  return T_ARRAY;
+            
+            else if (v instanceof Regex || "[object RegExp]" === to_string)  return T_REGEX;
+            
+            else if (v instanceof Func || ("function" === type_of && "[object Function]" === to_string))  return T_FUNC;
+            
+            else if ("[object Object]" === to_string)  return T_OBJ;
             
             // unkown type
             return T_UNKNOWN;
