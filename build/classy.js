@@ -1,9 +1,9 @@
 /**
 *
 *   Classy.js
-*   @version: 0.6.1
+*   @version: 0.7
 *
-*   Object-Oriented mini-framework for JavaScript
+*   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
 *
 **/!function ( root, name, deps, factory, undef ) {
@@ -208,13 +208,15 @@
 /**
 *
 *   Classy.js
-*   @version: 0.6.1
+*   @version: 0.7
 *
-*   Object-Oriented mini-framework for JavaScript
+*   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
 *
 **/
-(function( exports, undef ) {
+!function( exports, undef ) {
+    
+    "use strict";
     
     /**[DOC_MARKDOWN]
     *
@@ -222,27 +224,19 @@
     *
     [/DOC_MARKDOWN]**/
     
-    var Ctx = function(val, prev, next) {
-        this.v = val || null;
-        this.prev = prev || null;
-        this.next = next || null;
-    };
-    Ctx.prototype = {
-        constructor: Ctx,
-        v: null, prev: null,  next: null,
-        fwd: function( next ) { return new Ctx( next, this ); },
-        bwd: function( ) { return this.prev; }
-    };
-    var AP = Array.prototype, OP = Object.prototype, FP = Function.prototype,
-        slice = FP.call.bind(AP.slice),
+    var CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO__ = "__proto__", __STATIC__ = "__static__",
+        Str = String, Num = Number, Regex = RegExp, Arr = Array, AP = Arr[PROTO], Obj = Object, OP = Obj[PROTO], Func = Function, FP = Func[PROTO],
+        slice = FP.call.bind(AP.slice), toStr = FP.call.bind(OP.toString), hasProperty = FP.call.bind(OP.hasOwnProperty), 
+        propertyIsEnum = FP.call.bind(OP.propertyIsEnumerable), Keys = Obj.keys, defineProperty = Obj.defineProperty,
+        
+        typeOf = function( v ) { return typeof( v ); },
+        type_error = function( msg ) { throw new TypeError( msg ); },
+        
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperties
         // https://developer.mozilla.org/en-US/docs/Enumerability_and_ownership_of_properties
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/propertyIsEnumerable?redirectlocale=en-US&redirectslug=JavaScript%2FReference%2FGlobal_Objects%2FObject%2FpropertyIsEnumerable
-        toStr = FP.call.bind(OP.toString), 
-        hasProperty = FP.call.bind(OP.hasOwnProperty), 
-        propertyIsEnum = FP.call.bind(OP.propertyIsEnumerable),
-        Keys = Object.keys, defineProperty = Object.defineProperty,
+        
         // types
         T_NUM = 2,
         T_NAN = 3,
@@ -258,41 +252,29 @@
         T_UNDEF = 512,
         T_UNKNOWN = 1024,
         get_type = function( v ) {
-            var type_of = typeof(v), to_string = toStr(v);
+            var type_of = typeOf(v), to_string = toStr(v);
             
             if ("undefined" === type_of)  return T_UNDEF;
             
-            else if ("number" === type_of || v instanceof Number)  return isNaN(v) ? T_NAN : T_NUM;
+            else if ("number" === type_of || v instanceof Num)  return isNaN(v) ? T_NAN : T_NUM;
             
             else if (null === v)  return T_NULL;
             
             else if (true === v || false === v)  return T_BOOL;
             
-            else if (v && ("string" === type_of || v instanceof String)) return (1 === v.length) ? T_CHAR : T_STR;
+            else if (v && ("string" === type_of || v instanceof Str)) return (1 === v.length) ? T_CHAR : T_STR;
             
-            else if (v && ("[object Array]" === to_string || v instanceof Array))  return T_ARRAY;
+            else if (v && ("[object Array]" === to_string || v instanceof Arr))  return T_ARRAY;
             
-            else if (v && ("[object RegExp]" === to_string || v instanceof RegExp))  return T_REGEX;
+            else if (v && ("[object RegExp]" === to_string || v instanceof Regex))  return T_REGEX;
             
-            else if (v && (("function" === type_of && "[object Function]" === to_string) || v instanceof Function))  return T_FUNC;
+            else if (v && (("function" === type_of && "[object Function]" === to_string) || v instanceof Func))  return T_FUNC;
             
             else if (v && "[object Object]" === to_string)  return T_OBJ;
             
             // unkown type
             return T_UNKNOWN;
         },
-        // recycling same object
-        /*withValue = function(value) {
-            var d = withValue.d || (
-                withValue.d = {
-                    enumerable: false,
-                    writable: true,
-                    configurable: true,
-                    value: null
-            });
-            d.value = value;
-            return d;
-        },*/
         mergeUnique = function( a1, a2 ) {
             var i, l = a2.length, a = [ ].concat( a1 );
             for (i=0; i<l; i++)
@@ -304,7 +286,7 @@
         },
         convertToDescriptor = function (desc, obj) {
 
-            if ( T_OBJ !== get_type(desc) )  throw new TypeError("bad desc");
+            if ( T_OBJ !== get_type(desc) ) type_error("bad desc");
 
             var d = {};
             
@@ -320,7 +302,7 @@
             {
                 var g = desc.get;
 
-                if ( T_FUNC !== get_type(g) && g !== "undefined")   throw new TypeError("bad get");
+                if ( T_FUNC !== get_type(g) && g !== "undefined") type_error("bad get");
                 d.get = g;
             }
             
@@ -328,19 +310,19 @@
             {
                 var s = desc.set;
                 
-                if ( T_FUNC !== get_type(s) && s !== "undefined")   throw new TypeError("bad set");
+                if ( T_FUNC !== get_type(s) && s !== "undefined") type_error("bad set");
                 d.set = s;
             }
 
-            if (("get" in d || "set" in d) && ("value" in d || "writable" in d))  throw new TypeError("identity-confused descriptor");
+            if (("get" in d || "set" in d) && ("value" in d || "writable" in d)) type_error("identity-confused descriptor");
 
             return d;
         },
-        defineProperties = Object.defineProperties || function (obj, properties) {
+        defineProperties = Obj.defineProperties || function (obj, properties) {
             
-            if (typeof obj !== "object" || obj === null)  throw new TypeError("bad obj");
+            if (typeOf(obj) !== "object" || obj === null) type_error("bad obj");
 
-            properties = Object(properties);
+            properties = Obj(properties);
 
             var keys = Keys(properties);
             var descs = [];
@@ -364,33 +346,27 @@
         * Create an obj having *proto* as prototype adding any optional *properties* (Polyfill around **Object.create** method).
         *
         [/DOC_MARKDOWN]**/
-       Create = Object.create || function(proto, properties) {
+       Create = Obj.create || function( proto, properties ) {
             var Type = function () {}, TypeObject;
-            Type.prototype = proto;
-            TypeObject = new Type();
-            TypeObject.__proto__ = proto;
-            if ( 'object' === typeof(properties) ) defineProperties(TypeObject, properties);
+            Type[PROTO] = proto;
+            TypeObject = new Type( );
+            TypeObject[__PROTO__] = proto;
+            if ( 'object' === typeOf(properties) ) defineProperties(TypeObject, properties);
             return TypeObject;
         },
         
         
-        $super = function( superClass ) {
-            var _super = new Ctx( superClass );
+        $super = function( thisClass ) {
+            var currentScope = thisClass;
             // return the function to handle the super call, handling possible recursion if needed
             return function(method /*, var args here.. */) { 
-                if ( method && _super && _super.v )
+                var p, m, r;
+                if ( currentScope && (p=currentScope[PROTO]) && (m=p[method]) && m.$sup )
                 {
-                    var scope = this, ret;
-                    method = ( 'constructor' === method ) ? _super.v : _super.v.prototype[ method ];
-                    if ( method ) 
-                    {
-                        // handle recursion by walking the chain using a new context
-                        _super = _super.fwd( _super.v.$super );
-                        ret = method.apply(scope, slice( arguments, 1 ));
-                        // back to prev
-                        _super = _super.bwd( );
-                        return ret;
-                    }
+                    currentScope = currentScope.$super;
+                    r = m.$sup.apply(this, slice( arguments, 1 ));
+                    currentScope = thisClass;
+                    return r;
                 }
             };
         },
@@ -463,7 +439,7 @@
                 {
                     for (p in o)
                     {
-                        if ( "constructor" !== p )
+                        if ( CONSTRUCTOR !== p )
                         {
                             // only method namespacing
                             if ( hasNamespace && 
@@ -481,7 +457,7 @@
                 {
                     for (p in o)
                     {
-                        if ( "constructor" !== p )
+                        if ( CONSTRUCTOR !== p )
                         {
                             // only method namespacing
                             if ( hasNamespace && 
@@ -521,40 +497,57 @@
         // http://stackoverflow.com/questions/16063394/prototypical-inheritance-writing-up/16063711#16063711
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty/Additional_examples
         Extends = function(superClass, subClassProto, namespace, aliases) {
-            superClass = superClass || Object;
+            superClass = superClass || Obj;
             subClassProto = subClassProto || {};
-            var dummyConstructor, C, __static__ = null, $static = superClass.$static || null,
-                i, l, prop, key, val, T
+            var dummyConstructor, C, __static__ = null, 
+                $static = superClass.$static || null,
+                superClassProto = superClass[PROTO], 
+                i, l, prop, key, val, T, 
+                method, supermethod, methodname
             ;
             // fix issue when constructor is missing
-            if ( !hasProperty(subClassProto, 'constructor') )
+            if ( !hasProperty(subClassProto, CONSTRUCTOR) )
             {
                 dummyConstructor = function() {};
-                subClassProto['constructor'] = C = dummyConstructor;
+                subClassProto[CONSTRUCTOR] = C = dummyConstructor;
             }
             else
             {
-                C = subClassProto['constructor'];
+                C = subClassProto[CONSTRUCTOR];
             }
             
-            if ( hasProperty(subClassProto, '__static__') )
+            if ( hasProperty(subClassProto, __STATIC__) )
             {
                 // $static / __static__ props/methods and associated keys
                 // __static__ = actual props/methods
-                __static__ = subClassProto['__static__'];
-                delete subClassProto['__static__'];
+                __static__ = subClassProto[__STATIC__];
+                delete subClassProto[__STATIC__];
                 // $static = props/methods keys
                 // store "static keys" for enabling subclass inheritance/extension if needed
                 $static = mergeUnique( $static || [], Keys( __static__ ) );
             }
             
-            C.prototype = Alias( Create( superClass.prototype ), namespace, aliases );
-            C.prototype = Merge( C.prototype, subClassProto );
-            /*
-            C.prototype.constructor = C.prototype.$class = C;
-            C.prototype.$super = $super( superClass );
-            */
-            defineProperties( C.prototype, {
+            // add $super method references
+            for (methodname in subClassProto)
+            {
+                if ( ("$super" !== methodname) && (T_FUNC === get_type((method = subClassProto[methodname]))) )
+                {
+                    supermethod = superClassProto[methodname];
+                    if ( (T_FUNC === get_type(supermethod)) && (method !== supermethod) )
+                    {
+                        method.$sup = supermethod;
+                    }
+                    else if (method.$sup)
+                    {
+                        delete method.$sup;
+                    }
+                }
+            }
+            
+            C[PROTO] = Alias( Create( superClassProto ), namespace, aliases );
+            C[PROTO] = Merge( C[PROTO], subClassProto );
+
+            defineProperties( C[PROTO], {
                 
                 constructor: {
                     value: C,
@@ -571,19 +564,13 @@
                 },
                 
                 $super: {
-                    value: $super( superClass ),
+                    value: $super( C ),
                     enumerable: false,
                     writable: true,
                     configurable: true
                 }
             });
-            /*
-            C.$super = superClass;
-            if ( superClass.$static && 'object' == typeof(superClass.$static) )
-                C.$static = Merge( null, superClass.$static );
-            else
-                C.$static = null;
-            */
+
             defineProperties( C, {
                 
                 $super: {
@@ -817,11 +804,11 @@
                 else if ( T_OBJ === _qualifier )
                     _qualifier = args[0];
                 else
-                    _qualifier = { Extends: Object };
+                    _qualifier = { Extends: Obj };
                 
                 var _proto = args[1] || {},
                     _protomix = {},
-                    _extends = _qualifier.Extends || _qualifier.extends || Object,
+                    _extends = _qualifier.Extends || _qualifier.extends || Obj,
                     _implements = _qualifier.Implements || _qualifier.implements,
                     _mixin = _qualifier.Mixin || _qualifier.mixin,
                     _protoalias = null,
@@ -838,19 +825,19 @@
                     {
                         if ( T_OBJ === get_type( _mixin[i] ) )
                         {
-                            if ( _mixin[i].mixin && _mixin[i].mixin.prototype )
+                            if ( _mixin[i].mixin && _mixin[i].mixin[PROTO] )
                             {
                                 _protoalias = Alias(
-                                    _mixin[i].mixin.prototype, 
+                                    _mixin[i].mixin[PROTO], 
                                     _mixin[i].namespace || null, 
                                     _mixin[i].as || null
                                 );
                                 _protomix = Mixin(_protomix, _protoalias);
                             }
                         }
-                        else if ( _mixin[i].prototype )
+                        else if ( _mixin[i][PROTO] )
                         {
-                            _protoalias = _mixin[i].prototype;
+                            _protoalias = _mixin[i][PROTO];
                             _protomix = Mixin(_protomix, _protoalias);
                         }
                     }
@@ -862,19 +849,19 @@
                     {
                         if ( T_OBJ === get_type( _implements[i] ) )
                         {
-                            if ( _implements[i].implements && _implements[i].implements.prototype )
+                            if ( _implements[i].implements && _implements[i].implements[PROTO] )
                             {
                                 _protoalias = Alias(
-                                    _implements[i].implements.prototype, 
+                                    _implements[i].implements[PROTO], 
                                     _implements[i].namespace || null, 
                                     _implements[i].as || null
                                 );
                                 _protomix = Implements(_protomix, _protoalias);
                             }
                         }
-                        else if ( _implements[i].prototype )
+                        else if ( _implements[i][PROTO] )
                         {
-                            _protoalias = _implements[i].prototype;
+                            _protoalias = _implements[i][PROTO];
                             _protomix = Implements(_protomix, _protoalias);
                         }
                     }
@@ -883,7 +870,7 @@
                 if ( T_OBJ === get_type( _extends ) )
                 {
                     _class = Extends(
-                        _extends.extends || Object, 
+                        _extends.extends || Obj, 
                         Merge(_protomix, _proto), 
                         _extends.namespace || null,
                         _extends.as || null
@@ -897,7 +884,7 @@
             
             else
             {
-                _class = Extends(Object, args[0]);
+                _class = Extends(Obj, args[0]);
             }
             
             return _class;
@@ -907,22 +894,7 @@
     // export it
     exports.Classy = {
         
-        VERSION: "0.6.1",
-        
-        T: {
-            UNDEFINED: T_UNDEF,
-            NULL: T_NULL,
-            BOOLEAN: T_BOOL,
-            STRING: T_STR,
-            NUMBER: T_NUM,
-            NAN: T_NAN,
-            FUNCTION: T_FUNC,
-            REGEXP: T_REGEX,
-            ARRAY: T_ARRAY,
-            OBJECT: T_OBJ
-        },
-            
-        Type: get_type,
+        VERSION: "0.7",
         
         Create: Create,
         
@@ -943,7 +915,7 @@
         Class: Class
     };
     
-})(EXPORTS);
+}(EXPORTS);
 
     /* main code ends here */
     

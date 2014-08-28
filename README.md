@@ -1,8 +1,7 @@
 classy.js
 =========
 
-Object-Oriented mini-framework ( 6kB minified ) for JavaScript
-
+Object-Oriented micro-framework ( ~6kB minified ) for JavaScript
 
 __Example:__    [API Reference](/api-reference.md)
 
@@ -163,3 +162,18 @@ console.log(aParent.aStaticMethod2('aParent'));
 console.log(aChild.aStaticMethod2('aChild'));
 
 ```
+
+
+**Performance**
+
+This little framework was created for enabling (sugar-flavored) abstraction and modularity for bigger projects (using Object-Oriented methods).
+
+Most times, in big projects, one does not instantiate classes in the blink of a second, however still performance is important. So decided to check performance and size,
+and inspired by [this post comparing OOP/JS approaches performance](http://techblog.netflix.com/2014/05/improving-performance-of-our-javascript.html), added new jsperf tests 
+for classy.js. First test with previous classy.js version (0.6.1) is [here](http://jsperf.com/fun-with-method-overrides/8) and new test based on increasing performance, while not spoiling the abstraction and convience of *$super* method calls is [here](http://jsperf.com/fun-with-method-overrides-2).
+
+Overall an **increase in performance of 13% was achieved** , still classy.js is slowest compared to the other methods. However it provides greater flexibility and convience. The whole point (and bottleneck) of performances is the *super method calls*. 
+Classy.js uses an abstraction which resembles the super method calls in other languages (like PHP and Java).
+
+The new classy version (0.7) does an optimisation there (in the style of NFE as mentioned in the blog post above) and it is relativilty easy to change the whole *super calls design* to match the other approaches (mostly NFE), however it will make code
+less flexible, abstract and verbose. For my uses of this micro-framework, this is not as important, but one should take this into account if needed.

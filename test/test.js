@@ -95,6 +95,10 @@
             return this.$super('add');
         },
         
+        add: function() {
+            return this.$super('add');
+        },
+        
         sayHi: function() {
             return 'child parent: ' + this.$super('sayHi') + ', child: aChild says Hi';
         }
@@ -117,7 +121,7 @@
     echo();
     echo(aParentInst.add());
     echo(aChildInst.add());
-    echo(aChildInst.parentAdd());
+    //echo(aChildInst.parentAdd());
     echo();
 
     echo('Testing Method Override and Super calls recursion:');
