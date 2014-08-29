@@ -22,6 +22,7 @@
         slice = FP.call.bind(AP.slice), toStr = FP.call.bind(OP.toString), hasProperty = FP.call.bind(OP.hasOwnProperty), 
         propertyIsEnum = FP.call.bind(OP.propertyIsEnumerable), Keys = Obj.keys, defineProperty = Obj.defineProperty,
         
+        is_instance = function(o, t) { return o instanceof t; },
         typeOf = function( v ) { return typeof( v ); },
         type_error = function( msg ) { throw new TypeError( msg ); },
         
@@ -55,15 +56,15 @@
             
             if (undef === v || "undefined" === type_of)  return T_UNDEF;
             
-            else if (v instanceof Num || "number" === type_of)  return isNaN(v) ? T_NAN : T_NUM;
+            else if (is_instance(v, Num) || "number" === type_of)  return isNaN(v) ? T_NAN : T_NUM;
             
-            else if (v instanceof Str || "string" === type_of) return (1 === v.length) ? T_CHAR : T_STR;
+            else if (is_instance(v, Str) || "string" === type_of) return (1 === v.length) ? T_CHAR : T_STR;
             
-            else if (v instanceof Arr || "[object Array]" === to_string)  return T_ARRAY;
+            else if (is_instance(v, Arr) || "[object Array]" === to_string)  return T_ARRAY;
             
-            else if (v instanceof Regex || "[object RegExp]" === to_string)  return T_REGEX;
+            else if (is_instance(v, Regex) || "[object RegExp]" === to_string)  return T_REGEX;
             
-            else if (v instanceof Func || ("function" === type_of && "[object Function]" === to_string))  return T_FUNC;
+            else if (is_instance(v, Func) || ("function" === type_of && "[object Function]" === to_string))  return T_FUNC;
             
             else if ("[object Object]" === to_string)  return T_OBJ;
             
@@ -150,17 +151,18 @@
             return TypeObject;
         },
         
-        
-        $super = function( thisClass ) {
-            var currentScope = thisClass;
+        $super = function( superClass ) {
+            var currentScope = superClass, currentProto = currentScope[PROTO];
             // return the function to handle the super call, handling possible recursion if needed
             return function(method /*, var args here.. */) { 
-                var p, m, r;
-                if ( currentScope && (p=currentScope[PROTO]) && (m=p[method]) && m.$sup )
+                var m, r;
+                if ( currentProto && (m=currentProto[method]) )
                 {
                     currentScope = currentScope.$super;
-                    r = m.$sup.apply(this, slice( arguments, 1 ));
-                    currentScope = thisClass;
+                    currentProto = currentScope ? currentScope[PROTO] : null;
+                    r = m.apply(this, slice( arguments, 1 ));
+                    currentScope = superClass;
+                    currentProto = currentScope[PROTO];
                     return r;
                 }
             };
@@ -297,8 +299,8 @@
             var dummyConstructor, C, __static__ = null, 
                 $static = superClass.$static || null,
                 superClassProto = superClass[PROTO], 
-                i, l, prop, key, val, T, 
-                method, supermethod, methodname
+                i, l, prop, key, val, T
+                //,method, supermethod, methodname
             ;
             // fix issue when constructor is missing
             if ( !hasProperty(subClassProto, CONSTRUCTOR) )
@@ -323,7 +325,7 @@
             }
             
             // add $super method references
-            for (methodname in subClassProto)
+            /*for (methodname in subClassProto)
             {
                 if ( ("$super" !== methodname) && (T_FUNC === get_type((method = subClassProto[methodname]))) )
                 {
@@ -337,7 +339,7 @@
                         delete method.$sup;
                     }
                 }
-            }
+            }*/
             
             C[PROTO] = Alias( Create( superClassProto ), namespace, aliases );
             C[PROTO] = Merge( C[PROTO], subClassProto );
@@ -359,7 +361,7 @@
                 },
                 
                 $super: {
-                    value: $super( C ),
+                    value: $super( superClass ),
                     enumerable: false,
                     writable: true,
                     configurable: true
