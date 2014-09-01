@@ -1,6 +1,9 @@
 classy.js
 =========
 
+[classy.js](https://raw.githubusercontent.com/foo123/classy.js/master/build/classy.js),  [classy.min.js](https://raw.githubusercontent.com/foo123/classy.js/master/build/classy.min.js)
+
+
 Object-Oriented micro-framework ( ~6kB minified ) for JavaScript
 
 __Example:__    [API Reference](/api-reference.md)

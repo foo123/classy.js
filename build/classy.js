@@ -195,7 +195,7 @@
     }
 
 
-}(  /* current root */          this, 
+}(  /* current root */          this.self || this, 
     /* module name */           "Classy",
     /* module dependencies */   null, 
     /* module factory */        function(  ) {
