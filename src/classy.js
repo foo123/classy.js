@@ -693,6 +693,8 @@
         
         VERSION: "@@VERSION@@",
         
+        Type: get_type,
+        
         Create: Create,
         
         Merge: Merge,
