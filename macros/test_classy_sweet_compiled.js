@@ -1,5 +1,5 @@
 // require the classy lib here, compile this file including the classy.sweet.js macro lib
-var Classy$951 = require('../build/classy').Classy;
+var Classy$951 = require('../build/classy');
 // define a Parent super class
 var aParent$953 = Classy$951.Class({ Extends: Object }, {
         aProp: 1,

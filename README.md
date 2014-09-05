@@ -4,7 +4,7 @@ classy.js
 [classy.js](https://raw.githubusercontent.com/foo123/classy.js/master/build/classy.js),  [classy.min.js](https://raw.githubusercontent.com/foo123/classy.js/master/build/classy.min.js)
 
 
-Object-Oriented micro-framework ( ~6kB minified ) for JavaScript
+Object-Oriented micro-framework ( ~5kB minified ) for JavaScript
 
 __Example:__    [API Reference](/api-reference.md)
 
@@ -12,7 +12,7 @@ __Example:__    [API Reference](/api-reference.md)
 ```javascript
     
     // if inside node
-    var Class = require('../build/classy.js').Classy.Class;
+    var Class = require('../build/classy.js').Class;
     // else Classy will be available as window.Classy in browser
     
     var aParent = Class({ /* extends Object by default */
@@ -65,7 +65,7 @@ or with some [sweet.js](http://github.com/mozilla/sweet.js) syntactic sugar simi
 ```javascript
 
 // require the classy lib here, compile this file including the classy.sweet.js macro lib
-var Classy = require('../build/classy').Classy;
+var Classy = require('../build/classy');
 
 // define a Parent super class
 Class aParent {

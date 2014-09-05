@@ -1,214 +1,41 @@
 /**
 *
 *   Classy.js
-*   @version: 0.7.2
+*   @version: 0.7.3
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
 *
-**/!function ( root, name, deps, factory, undef ) {
+**/!function( root, name, factory ) {
 
     "use strict";
-    var isNode = ("undefined" !== typeof global && "[object global]" === {}.toString.call(global)),
-        isBrowser = (!isNode && "undefined" !== typeof navigator ), 
-        isWorker = ("function" === typeof importScripts && navigator instanceof WorkerNavigator),
-        A = Array, AP = A.prototype
-    ;
-    // Get current filename/path
-    var getCurrentPath = function() {
-            var file = null;
-            if ( isNode ) 
-            {
-                // http://nodejs.org/docs/latest/api/globals.html#globals_filename
-                // this should hold the current file in node
-                file = __filename;
-                return { path: __dirname, file: __filename };
-            }
-            else if ( isWorker )
-            {
-                // https://developer.mozilla.org/en-US/docs/Web/API/WorkerLocation
-                // this should hold the current url in a web worker
-                file = self.location.href;
-            }
-            else if ( isBrowser )
-            {
-                // get last script (should be the current one) in browser
-                var scripts;
-                if ((scripts = document.getElementsByTagName('script')) && scripts.length) 
-                    file  = scripts[scripts.length - 1].src;
-            }
-            
-            if ( file )
-                return { path: file.split('/').slice(0, -1).join('/'), file: file };
-            return { path: null, file: null };
-        },
-        thisPath = getCurrentPath(),
-        makePath = function(base, dep) {
-            if ( isNode )
-            {
-                //return require('path').join(base, dep);
-                return dep;
-            }
-            if ( "." == dep.charAt(0) ) 
-            {
-                base = base.split('/');
-                dep = dep.split('/'); 
-                var index = 0, index2 = 0, i, l = dep.length, l2 = base.length;
-                
-                for (i=0; i<l; i++)
-                {
-                    if ( /^\.\./.test( dep[i] ) )
-                    {
-                        index++;
-                        index2++;
-                    }
-                    else if ( /^\./.test( dep[i] ) )
-                    {
-                        index2++;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                index = ( index >= l2 ) ? 0 : l2-index;
-                dep = base.slice(0, index).concat( dep.slice( index2 ) ).join('/');
-            }
-            return dep;
-        }
-    ;
     
     //
-    // export the module in a umd-style generic way
-    deps = ( deps ) ? [].concat(deps) : [];
-    var i, dl = deps.length, ids = new A( dl ), paths = new A( dl ), fpaths = new A( dl ), mods = new A( dl ), _module_, head;
-        
-    for (i=0; i<dl; i++) { ids[i] = deps[i][0]; paths[i] = deps[i][1]; fpaths[i] = /\.js$/i.test(paths[i]) ? makePath(thisPath.path, paths[i]) : makePath(thisPath.path, paths[i]+'.js'); }
+    // export the module, umd-style
     
-    // node, commonjs, etc..
-    if ( "object" === typeof( module ) && module.exports ) 
-    {
-        if ( undef === module.exports[name] )
-        {
-            for (i=0; i<dl; i++)  mods[i] = module.exports[ ids[i] ] || require( fpaths[i] )[ ids[i] ];
-            _module_ = factory.apply(root, mods );
-            // allow factory just to add to existing modules without returning a new module
-            module.exports[ name ] = _module_ || 1;
-        }
-    }
+    // node, CommonJS, etc..
+    if ( 'object' === typeof(module) && module.exports ) 
+        module.exports = (module.deps = module.deps || {})[ name ] = module.deps[ name ] || (factory.call( root ) || 1);
     
-    // amd, etc..
-    else if ( "function" === typeof( define ) && define.amd ) 
-    {
-        define( ['exports'].concat( paths ), function( exports ) {
-            if ( undef === exports[name] )
-            {
-                var args = AP.slice.call( arguments, 1 ), dl = args.length;
-                for (var i=0; i<dl; i++)   mods[i] = exports[ ids[i] ] || args[ i ];
-                _module_ = factory.apply(root, mods );
-                // allow factory just to add to existing modules without returning a new module
-                exports[ name ] = _module_ || 1;
-            }
-        });
-    }
+    // AMD, etc..
+    else if ( 'function' === typeof(define) && define.amd ) define( name, [ ], function( ){ return factory.call( root ); } );
     
-    // web worker
-    else if ( isWorker ) 
-    {
-        for (i=0; i<dl; i++)  
-        {
-            if ( !self[ ids[i] ] ) importScripts( fpaths[i] );
-            mods[i] = self[ ids[i] ];
-        }
-        _module_ = factory.apply(root, mods );
-        // allow factory just to add to existing modules without returning a new module
-        self[ name ] = _module_ || 1;
-    }
-    
-    // browsers, other loaders, etc..
-    else
-    {
-        if ( undef === root[name] )
-        {
-            /*
-            for (i=0; i<dl; i++)  mods[i] = root[ ids[i] ];
-            _module_ = factory.apply(root, mods );
-            // allow factory just to add to existing modules without returning a new module
-            root[name] = _module_ || 1;
-            */
-            
-            // load javascript async using <script> tags in browser
-            var loadJs = function(url, callback) {
-                head = head || document.getElementsByTagName("head")[0];
-                var done = 0, script = document.createElement('script');
-                
-                script.type = 'text/javascript';
-                script.language = 'javascript';
-                script.onload = script.onreadystatechange = function( ) {
-                    if (!done && (!script.readyState || script.readyState == 'loaded' || script.readyState == 'complete'))
-                    {
-                        done = 1;
-                        script.onload = script.onreadystatechange = null;
-                        head.removeChild( script );
-                        script = null;
-                        if ( callback )  callback();
-                    }
-                }
-                // load it
-                script.src = url;
-                head.appendChild( script );
-            };
-
-            var loadNext = function(id, url, callback) { 
-                    if ( !root[ id ] ) 
-                        loadJs( url, callback ); 
-                    else
-                        callback();
-                },
-                continueLoad = function( i ) {
-                    return function() {
-                        if ( i < dl )  mods[ i ] = root[ ids[ i ] ];
-                        if ( ++i < dl )
-                        {
-                            loadNext( ids[ i ], fpaths[ i ], continueLoad( i ) );
-                        }
-                        else
-                        {
-                            _module_ = factory.apply(root, mods );
-                            // allow factory just to add to existing modules without returning a new module
-                            root[ name ] = _module_ || 1;
-                        }
-                    };
-                }
-            ;
-            if ( dl ) 
-            {
-                loadNext( ids[ 0 ], fpaths[ 0 ], continueLoad( 0 ) );
-            }
-            else
-            {
-                _module_ = factory.apply(root, mods );
-                // allow factory just to add to existing modules without returning a new module
-                root[ name ] = _module_ || 1;
-            }
-        }
-    }
+    // browser, etc..
+    else if ( !(name in root) ) root[ name ] = factory.call( root ) || 1;
 
 
-}(  /* current root */          this.self || this, 
+}(  /* current root */          this, 
     /* module name */           "Classy",
-    /* module dependencies */   null, 
-    /* module factory */        function(  ) {
-
-        /* custom exports object */
-        var EXPORTS = {};
+    /* module factory */        function( ) {
         
-        /* main code starts here */
+    /* custom exports object */
+    var exports = {};
+    /* main code starts here */
 
 /**
 *
 *   Classy.js
-*   @version: 0.7.2
+*   @version: 0.7.3
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -713,7 +540,7 @@
         * ```javascript
         *
         * // require the classy lib here, compile this file including the macros/classy.sweet.js macro lib
-        * var Classy = require('../build/classy').Classy;
+        * var Classy = require('../build/classy');
         * 
         * // define a Parent super class
         * Class aParent {
@@ -898,7 +725,7 @@
     // export it
     exports.Classy = {
         
-        VERSION: "0.7.2",
+        VERSION: "0.7.3",
         
         Create: Create,
         
@@ -919,10 +746,8 @@
         Class: Class
     };
     
-}(EXPORTS);
-
+}(exports);    
     /* main code ends here */
-    
     /* export the module "Classy" */
-    return EXPORTS["Classy"];
+    return exports["Classy"];
 });

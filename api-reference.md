@@ -134,7 +134,7 @@ __Example:__
 ```javascript
 
 // require the classy lib here, compile this file including the macros/classy.sweet.js macro lib
-var Classy = require('../build/classy').Classy;
+var Classy = require('../build/classy');
 
 // define a Parent super class
 Class aParent {

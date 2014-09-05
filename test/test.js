@@ -22,7 +22,7 @@
                 ].join('');
             }
         };
-        Classy = require('../build/classy.js').Classy;
+        Classy = require('../build/classy.js');
         Class = Classy.Class;
     }
     else
