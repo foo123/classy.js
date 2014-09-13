@@ -1,4 +1,4 @@
-(function( root ) {
+!function( root ) {
     
     var isNode = ('undefined'!==typeof(global) && '[object global]'=={}.toString.call(global));
     var Classy, Class, _console, echo, assert;
@@ -190,4 +190,4 @@
     echo('aChildInst instanceof aParent                     : ' + assert(aChildInst instanceof aParent));
     echo('aChildInst instanceof aChild                      : ' + assert(aChildInst instanceof aChild));
     echo();
-})( this );
+}( this );

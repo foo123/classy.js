@@ -1,42 +1,7 @@
 /**
 *
 *   Classy.js
-*   @version: 0.7.5
-*
-*   Object-Oriented micro-framework for JavaScript
-*   https://github.com/foo123/classy.js
-*
-**/!function( root, name, factory ) {
-    "use strict";
-    
-    //
-    // export the module, umd-style (no other dependencies)
-    var isCommonJS = ("object" === typeof(module)) && module.exports, 
-        isAMD = ("function" === typeof(define)) && define.amd, m;
-    
-    // CommonJS, node, etc..
-    if ( isCommonJS ) 
-        module.exports = (module.$deps = module.$deps || {})[ name ] = module.$deps[ name ] || (factory.call( root, {NODE:module} ) || 1);
-    
-    // AMD, requireJS, etc..
-    else if ( isAMD && ("function" === typeof(require)) && ("function" === typeof(require.specified)) && require.specified(name) ) 
-        define( name, ['require', 'exports', 'module'], function( require, exports, module ){ return factory.call( root, {AMD:module} ); } );
-    
-    // browser, web worker, etc.. + AMD, other loaders
-    else if ( !(name in root) ) 
-        (root[ name ] = (m=factory.call( root, {} ) || 1)) && isAMD && define( name, [], function( ){ return m; } );
-
-
-}(  /* current root */          this, 
-    /* module name */           "Classy",
-    /* module factory */        function( exports ) {
-        
-    /* main code starts here */
-
-/**
-*
-*   Classy.js
-*   @version: 0.7.5
+*   @version: 0.7.3
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -186,77 +151,22 @@
             return TypeObject;
         },
         
-        // this.$super('method', a, b);
-        // this.$super('method', a, b);
-        $SUPER = function( superClass ) {
+        $super = function( superClass ) {
+            var currentScope = superClass, currentProto = currentScope[PROTO];
             // return the function to handle the super call, handling possible recursion if needed
-            var _super_super = superClass.$super || function( ){ };
-            function _super( method /*, var args here.. */ ) { 
-                var r, l=arguments.length-1;
-                // no recursion faster instead of recursing on this.$super and walking the prototype
-                this.$super = _super_super;
-                // http://jsperf.com/argument-slicers
-                // .call is faster than .apply
-                r = l ? superClass[method].apply(this, slice(arguments, 1)) : superClass[method].call(this);
-                this.$super = _super;
-                return r;
-            }
-            return _super;
-        },
-        
-        // this.$superv('method', [a, b]);
-        // this.$superv('method', [a, b]);
-        $SUPER_WITH_ARGS = function( superClass ) {
-            // return the function to handle the super call, handling possible recursion if needed
-            var _super_super = superClass.$superv || function( ){ };
-            function _super( method, args ) { 
-                var r, l=args ? args.length : 0;
-                // no recursion faster instead of recursing on this.$super and walking the prototype
-                this.$superv = _super_super;
-                // .call is faster than .apply
-                r = l ? superClass[method].apply(this, args) : superClass[method].call(this);
-                this.$superv = _super;
-                return r;
-            }
-            return _super;
-        },
-        
-        /*
-        // alternative (lot faster) abstract super calls
-        // this.$sup.$method.call(this, a, b);
-        // this.$sup.$method.call(this, a, b);
-        $SUP = function( superClass ) {
-            var _sup_sup = superClass.$sup || function( ){ return function(){}; };
-            function _sup( method ) { 
-                var m = superClass[method];
-                return function( ) {
-                    this.$sup = _sup_sup; 
-                    // http://jsperf.com/ternary-vs-and-or-vs-if-else
-                    var r = arguments.length ? m.apply(this, arguments) : m.call(this);
-                    this.$sup = _sup;
+            return function(method /*, var args here.. */) { 
+                var m, r;
+                if ( currentProto && (m=currentProto[method]) )
+                {
+                    currentScope = currentScope.$super;
+                    currentProto = currentScope ? currentScope[PROTO] : null;
+                    r = m.apply(this, slice( arguments, 1 ));
+                    currentScope = superClass;
+                    currentProto = currentScope[PROTO];
                     return r;
-                };
-            }
-            return _sup;
+                }
+            };
         },
-        
-        // alternative abstract super calls (2)
-        // this.method.$super(a, b);
-        // this.method.$super(a, b);
-        $SUP2 = function( superClass, method ) {
-            // return the function to handle the super call, handling possible recursion if needed
-            var m = superClass[method], _super_super = m.$super || function( ){ };
-            function _super( ) { 
-                // no recursion faster instead of recursing on this.$super and walking the prototype
-                this[method].$super = _super_super;
-                // .call is faster than .apply
-                var r = arguments.length ? m.apply(this, arguments) : m.call(this);
-                this[method].$super = _super;
-                return r;
-            }
-            return _super;
-        },
-        */
         
         /**[DOC_MARKDOWN]
         * __Method__: *Merge*
@@ -390,7 +300,7 @@
                 $static = superClass.$static || null,
                 superClassProto = superClass[PROTO], 
                 i, l, prop, key, val, T
-                ,method, $super, $sup
+                //,method, supermethod, methodname
             ;
             // fix issue when constructor is missing
             if ( !hasProperty(subClassProto, CONSTRUCTOR) )
@@ -430,23 +340,10 @@
                     }
                 }
             }*/
+            
             C[PROTO] = Alias( Create( superClassProto ), namespace, aliases );
             C[PROTO] = Merge( C[PROTO], subClassProto );
-            
-            // add $super method references (2)
-            /*$super = $SUPER( superClassProto ); $sup = $SUP( superClassProto );
-            for (method in superClassProto)
-            {
-                if ( T_FUNC === get_type(superClassProto[method]) ) 
-                {
-                    $sup[ '$' + method ] = $sup( method );
-                    if ( T_FUNC === get_type(C[PROTO][method]) ) 
-                    {
-                        C[PROTO][method].$super = $SUP2(superClassProto, method);
-                    }
-                }
-            }*/
-            
+
             defineProperties( C[PROTO], {
                 
                 constructor: {
@@ -463,21 +360,8 @@
                     configurable: true
                 },
                 
-                /*$sup: {
-                    value: $sup,
-                    enumerable: false,
-                    writable: true,
-                    configurable: true
-                },*/
-                
-                $superv: {
-                    value: $SUPER_WITH_ARGS( superClassProto ),
-                    enumerable: false,
-                    writable: true,
-                    configurable: true
-                },
                 $super: {
-                    value: /*$super*/ $SUPER( superClassProto ),
+                    value: $super( superClass ),
                     enumerable: false,
                     writable: true,
                     configurable: true
@@ -805,9 +689,9 @@
     ;
     
     // export it
-    exports['Classy'] = {
+    exports['Classy073'] = {
         
-        VERSION: "0.7.5",
+        VERSION: "0.7.3",
         
         Type: get_type,
         
@@ -830,8 +714,4 @@
         Class: Class
     };
     
-}(exports);    
-    /* main code ends here */
-    /* export the module */
-    return exports["Classy"];
-});
+}(window);

@@ -1,42 +1,7 @@
 /**
 *
 *   Classy.js
-*   @version: 0.7.5
-*
-*   Object-Oriented micro-framework for JavaScript
-*   https://github.com/foo123/classy.js
-*
-**/!function( root, name, factory ) {
-    "use strict";
-    
-    //
-    // export the module, umd-style (no other dependencies)
-    var isCommonJS = ("object" === typeof(module)) && module.exports, 
-        isAMD = ("function" === typeof(define)) && define.amd, m;
-    
-    // CommonJS, node, etc..
-    if ( isCommonJS ) 
-        module.exports = (module.$deps = module.$deps || {})[ name ] = module.$deps[ name ] || (factory.call( root, {NODE:module} ) || 1);
-    
-    // AMD, requireJS, etc..
-    else if ( isAMD && ("function" === typeof(require)) && ("function" === typeof(require.specified)) && require.specified(name) ) 
-        define( name, ['require', 'exports', 'module'], function( require, exports, module ){ return factory.call( root, {AMD:module} ); } );
-    
-    // browser, web worker, etc.. + AMD, other loaders
-    else if ( !(name in root) ) 
-        (root[ name ] = (m=factory.call( root, {} ) || 1)) && isAMD && define( name, [], function( ){ return m; } );
-
-
-}(  /* current root */          this, 
-    /* module name */           "Classy",
-    /* module factory */        function( exports ) {
-        
-    /* main code starts here */
-
-/**
-*
-*   Classy.js
-*   @version: 0.7.5
+*   @version: 0.7.4
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -805,9 +770,9 @@
     ;
     
     // export it
-    exports['Classy'] = {
+    exports['Classy074'] = {
         
-        VERSION: "0.7.5",
+        VERSION: "0.7.4",
         
         Type: get_type,
         
@@ -830,8 +795,4 @@
         Class: Class
     };
     
-}(exports);    
-    /* main code ends here */
-    /* export the module */
-    return exports["Classy"];
-});
+}(window);

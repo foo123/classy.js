@@ -51,7 +51,7 @@ var aChild$955 = Classy$951.Class({
             if (1 > arguments.length)
                 msg = '';
             // call super constructor (js-style)
-            this.$super('constructor', msg);
+            this.$superv('constructor', [msg]);
             // call super constructor or other method (PHP-style)
             //super.constructor(msg);
             this.msg = 'child says also ' + this.msg;
@@ -69,7 +69,10 @@ var aChild$955 = Classy$951.Class({
             console.log(arg1);
             console.log(arg2);
             console.log(otherArgs$1061);
-            return this.$super('sayHi', arg1, arg2);
+            return this.$superv('sayHi', [
+                arg1,
+                arg2
+            ]);
         },
         __static__: {
             aStaticMethod: function (msg) {

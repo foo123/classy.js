@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        
+        <title>Classy Perf Tests</title>
+        
+        <style type="text/css">
+            .loader
+            {
+                padding: 0;
+                position: relative;
+                display: inline-block;
+                background: url(./assets/ajax-loader.gif);
+                width: 16px;
+                height: 11px;
+            }
+        </style>
+        
+        <script src="./assets/lodash.min.js"></script>
+        <script src="./assets/platform.min.js"></script>
+        <script src="./assets/benchmark.min.js"></script>
+        
+        <script src="./other/resig_oop.js"></script>
+        <script src="./other/classy-0.7.3.js"></script>
+        <script src="./other/classy-0.7.4.js"></script>
+    </head>
+    
+    <body>
+        <h2>Classy super calls Performance Tests</h2><br />
+        <strong>Output Console</strong> <span id="loader" class="loader" style="display:none;"></span><hr />
+        <pre id="output" style="position:relative;width:90%"></pre>
+        <script src="./perf.js"></script>
+    </body>
+</html>

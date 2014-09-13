@@ -19,7 +19,7 @@
     
     var CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO__ = "__proto__", __STATIC__ = "__static__",
         Str = String, Num = Number, Regex = RegExp, Arr = Array, AP = Arr[PROTO], Obj = Object, OP = Obj[PROTO], Func = Function, FP = Func[PROTO],
-        slicec = AP.slice, slice = FP.call.bind(slicec), toStr = FP.call.bind(OP.toString), hasProperty = FP.call.bind(OP.hasOwnProperty), 
+        slice = FP.call.bind(AP.slice), toStr = FP.call.bind(OP.toString), hasProperty = FP.call.bind(OP.hasOwnProperty), 
         propertyIsEnum = FP.call.bind(OP.propertyIsEnumerable), Keys = Obj.keys, defineProperty = Obj.defineProperty,
         
         is_instance = function(o, t) { return o instanceof t; },
@@ -162,45 +162,66 @@
                 this.$super = _super_super;
                 // http://jsperf.com/argument-slicers
                 // .call is faster than .apply
-                r = l ? superClass[method].apply(this, slicec.call(arguments, 1)) : superClass[method].call(this);
+                r = l ? superClass[method].apply(this, slice(arguments, 1)) : superClass[method].call(this);
                 this.$super = _super;
                 return r;
             }
             return _super;
         },
         
+        // this.$superv('method', [a, b]);
+        // this.$superv('method', [a, b]);
+        $SUPER_WITH_ARGS = function( superClass ) {
+            // return the function to handle the super call, handling possible recursion if needed
+            var _super_super = superClass.$superv || function( ){ };
+            function _super( method, args ) { 
+                var r, l=args ? args.length : 0;
+                // no recursion faster instead of recursing on this.$super and walking the prototype
+                this.$superv = _super_super;
+                // .call is faster than .apply
+                r = l ? superClass[method].apply(this, args) : superClass[method].call(this);
+                this.$superv = _super;
+                return r;
+            }
+            return _super;
+        },
+        
+        /*
         // alternative (lot faster) abstract super calls
         // this.$sup.$method.call(this, a, b);
         // this.$sup.$method.call(this, a, b);
-        /*$SUP = function( superClass ) {
+        $SUP = function( superClass ) {
             var _sup_sup = superClass.$sup || function( ){ return function(){}; };
             function _sup( method ) { 
                 var m = superClass[method];
                 return function( ) {
-                    var r;//, l=arguments.length;
                     this.$sup = _sup_sup; 
                     // http://jsperf.com/ternary-vs-and-or-vs-if-else
-                    //r = l ? m.apply(this, arguments) : m.call(this);
-                    r = m.apply(this, arguments);
+                    var r = arguments.length ? m.apply(this, arguments) : m.call(this);
                     this.$sup = _sup;
                     return r;
                 };
             }
             return _sup;
-        },*/
+        },
         
         // alternative abstract super calls (2)
-        // this.method.$super().call(this, a, b);
-        // this.method.$super().call(this, a, b);
-        /*$SUP2 = function( method, thisClass, superClass ) {
-            var thisMethod = thisClass[ method ];
-            thisMethod.$sup = superClass[ method ];
-            thisMethod.$super =  function _super( ) {
-                // if ( test? ) thisClass[ method ].$super = _super;
-                thisClass = thisClass.$super;
-                return thisClass[ method ];
-            };
-        },*/
+        // this.method.$super(a, b);
+        // this.method.$super(a, b);
+        $SUP2 = function( superClass, method ) {
+            // return the function to handle the super call, handling possible recursion if needed
+            var m = superClass[method], _super_super = m.$super || function( ){ };
+            function _super( ) { 
+                // no recursion faster instead of recursing on this.$super and walking the prototype
+                this[method].$super = _super_super;
+                // .call is faster than .apply
+                var r = arguments.length ? m.apply(this, arguments) : m.call(this);
+                this[method].$super = _super;
+                return r;
+            }
+            return _super;
+        },
+        */
         
         /**[DOC_MARKDOWN]
         * __Method__: *Merge*
@@ -381,7 +402,14 @@
             /*$super = $SUPER( superClassProto ); $sup = $SUP( superClassProto );
             for (method in superClassProto)
             {
-                if ( T_FUNC === get_type(superClassProto[method]) ) $sup[ '$' + method ] = $sup( method );
+                if ( T_FUNC === get_type(superClassProto[method]) ) 
+                {
+                    $sup[ '$' + method ] = $sup( method );
+                    if ( T_FUNC === get_type(C[PROTO][method]) ) 
+                    {
+                        C[PROTO][method].$super = $SUP2(superClassProto, method);
+                    }
+                }
             }*/
             
             defineProperties( C[PROTO], {
@@ -407,8 +435,14 @@
                     configurable: true
                 },*/
                 
+                $superv: {
+                    value: $SUPER_WITH_ARGS( superClassProto ),
+                    enumerable: false,
+                    writable: true,
+                    configurable: true
+                },
                 $super: {
-                    value: /*$super*/$SUPER( superClassProto ),
+                    value: /*$super*/ $SUPER( superClassProto ),
                     enumerable: false,
                     writable: true,
                     configurable: true

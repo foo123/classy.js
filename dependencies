@@ -32,7 +32,7 @@ REPLACE =[{}]
 
     "@@ROOT@@" = "this"
     "@@EXPORTS@@" = "exports"
-    "@@VERSION@@" = "0.7.4"
+    "@@VERSION@@" = "0.7.5"
     "@@MODULE_NAME@@" = "Classy"
     
 @ # end block

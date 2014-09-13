@@ -147,22 +147,22 @@ macro PARSE_CLASS_DEFS_
                 macro $__super__ {
                     // same super method no args
                     rule { ( )  } => {
-                        this.$super(__TO_STR__ $method)
+                        this.$superv(__TO_STR__ $method)
                     }
                     
                     // same super method with args
                     rule { ( $sargs $[...] ) } => {
-                        this.$super(__TO_STR__ $method, $sargs $[...])
+                        this.$superv(__TO_STR__ $method, [$sargs $[...]])
                     }
                     
                     // another super method no args
                     rule { . $supermethod:ident ( ) } => { 
-                        this.$super(__TO_STR__ $supermethod)
+                        this.$superv(__TO_STR__ $supermethod)
                     }
 
                     // another super method with args
                     rule { . $supermethod:ident ( $sargs $[...] ) } => { 
-                        this.$super(__TO_STR__ $supermethod, $sargs $[...] )
+                        this.$superv(__TO_STR__ $supermethod, [$sargs $[...]] )
                     }
                     
                     // rest ...
