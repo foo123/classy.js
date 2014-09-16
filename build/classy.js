@@ -1,7 +1,7 @@
 /**
 *
 *   Classy.js
-*   @version: 0.7.5
+*   @version: 0.7.6
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -36,7 +36,7 @@
 /**
 *
 *   Classy.js
-*   @version: 0.7.5
+*   @version: 0.7.6
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -188,17 +188,27 @@
         
         // this.$super('method', a, b);
         // this.$super('method', a, b);
-        $SUPER = function( superClass ) {
+        $SUPER = function( superClass/*, thisClass*/ ) {
             // return the function to handle the super call, handling possible recursion if needed
-            var _super_super = superClass.$super || function( ){ };
+            var _super_super = superClass.$super || function( ){ }, called = null;
             function _super( method /*, var args here.. */ ) { 
-                var r, l=arguments.length-1;
-                // no recursion faster instead of recursing on this.$super and walking the prototype
-                this.$super = _super_super;
-                // http://jsperf.com/argument-slicers
-                // .call is faster than .apply
-                r = l ? superClass[method].apply(this, slice(arguments, 1)) : superClass[method].call(this);
-                this.$super = _super;
+                var r, l;
+                //this.$super = _super_super;
+                if ( called === method )
+                {
+                    // no recursion faster instead of recursing on this.$super and walking the prototype
+                    r = _super_super.apply(this, arguments);
+                }
+                else
+                {
+                    // http://jsperf.com/argument-slicers
+                    // .call is faster than .apply
+                    called = method;
+                    l = arguments.length-1;
+                    r = l ? superClass[method].apply(this, slice(arguments, 1)) : superClass[method].call(this);
+                    called = null;
+                }
+                //this.$super = _super;
                 return r;
             }
             return _super;
@@ -206,16 +216,26 @@
         
         // this.$superv('method', [a, b]);
         // this.$superv('method', [a, b]);
-        $SUPER_WITH_ARGS = function( superClass ) {
+        $SUPER_WITH_ARGS = function( superClass/*, thisClass*/ ) {
             // return the function to handle the super call, handling possible recursion if needed
-            var _super_super = superClass.$superv || function( ){ };
+            var _super_super = superClass.$superv || function( ){ }, called = null;
             function _super( method, args ) { 
-                var r, l=args ? args.length : 0;
-                // no recursion faster instead of recursing on this.$super and walking the prototype
-                this.$superv = _super_super;
-                // .call is faster than .apply
-                r = l ? superClass[method].apply(this, args) : superClass[method].call(this);
-                this.$superv = _super;
+                var r, l;
+                //this.$superv = _super_super;
+                if ( called === method )
+                {
+                    // no recursion faster instead of recursing on this.$super and walking the prototype
+                    r = _super_super.call(this, method, args);
+                }
+                else
+                {
+                    // .call is faster than .apply
+                    called = method;
+                    l = args ? args.length : 0;
+                    r = l ? superClass[method].apply(this, args) : superClass[method].call(this);
+                    called = null;
+                }
+                //this.$superv = _super;
                 return r;
             }
             return _super;
@@ -389,7 +409,7 @@
             var dummyConstructor, C, __static__ = null, 
                 $static = superClass.$static || null,
                 superClassProto = superClass[PROTO], 
-                i, l, prop, key, val, T
+                i, l, prop, key, val, T, thisProto
                 ,method, $super, $sup
             ;
             // fix issue when constructor is missing
@@ -432,6 +452,7 @@
             }*/
             C[PROTO] = Alias( Create( superClassProto ), namespace, aliases );
             C[PROTO] = Merge( C[PROTO], subClassProto );
+            thisProto = C[PROTO];
             
             // add $super method references (2)
             /*$super = $SUPER( superClassProto ); $sup = $SUP( superClassProto );
@@ -440,14 +461,14 @@
                 if ( T_FUNC === get_type(superClassProto[method]) ) 
                 {
                     $sup[ '$' + method ] = $sup( method );
-                    if ( T_FUNC === get_type(C[PROTO][method]) ) 
+                    if ( T_FUNC === get_type(thisProto[method]) ) 
                     {
-                        C[PROTO][method].$super = $SUP2(superClassProto, method);
+                        thisProto[method].$super = $SUP2(superClassProto, method);
                     }
                 }
             }*/
             
-            defineProperties( C[PROTO], {
+            defineProperties( thisProto, {
                 
                 constructor: {
                     value: C,
@@ -471,19 +492,19 @@
                 },*/
                 
                 $superv: {
-                    value: $SUPER_WITH_ARGS( superClassProto ),
+                    value: $SUPER_WITH_ARGS( superClassProto, thisProto ),
                     enumerable: false,
                     writable: true,
                     configurable: true
                 },
                 $super: {
-                    value: /*$super*/ $SUPER( superClassProto ),
+                    value: /*$super*/ $SUPER( superClassProto, thisProto ),
                     enumerable: false,
                     writable: true,
                     configurable: true
                 }
             });
-
+            
             defineProperties( C, {
                 
                 $super: {
@@ -807,7 +828,7 @@
     // export it
     exports['Classy'] = {
         
-        VERSION: "0.7.5",
+        VERSION: "0.7.6",
         
         Type: get_type,
         
