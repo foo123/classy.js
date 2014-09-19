@@ -38,8 +38,10 @@ __Example:__    [API Reference](/api-reference.md)
     var aChild = Class( { Extends: aParent }, {
         
         constructor: function(a, b) {
-            // call super constructor
+            // call super constructor (slower)
             this.$super('constructor', a, b);
+            // call super vector (args) constructor (lot faster)
+            //this.$superv('constructor', [a, b]);
         },
         
         sayHi: function() {
@@ -171,12 +173,26 @@ console.log(aChild.aStaticMethod2('aChild'));
 
 This little framework was created for enabling (sugar-flavored) abstraction and modularity for bigger projects (using Object-Oriented methods).
 
-Most times, in big projects, one does not instantiate classes in the blink of a second, still performance is important. So decided to check performance and size,
-and inspired by [this post comparing OOP/JS approaches performance](http://techblog.netflix.com/2014/05/improving-performance-of-our-javascript.html), added new jsperf tests 
-for classy.js (and updates). First test with previous classy.js version (0.6.1) is [here](http://jsperf.com/fun-with-method-overrides/8) and new test(s) based on increasing performance, while at the same not spoiling the abstraction and flexibility of using *$super* method calls, is [here](http://jsperf.com/fun-with-method-overrides-3/2).
+Most times, in big projects, one does not instantiate classes in the blink of a second, still performance is important. So decided to check performance and size, and inspired by [this post comparing OOP/JS approaches performance](http://techblog.netflix.com/2014/05/improving-performance-of-our-javascript.html), added new jsperf tests 
+for classy.js (and updates). First test with previous classy.js version (0.6.1) is [here](http://jsperf.com/fun-with-method-overrides/8).
 
-Overall an **increase in performance of 13% was achieved** , yet classy.js is slowest compared to the other methods. On the other hand, it provides greater flexibility and convenience. The whole point (and bottleneck) of performances is the *super method calls*. 
-Classy.js uses an abstraction which resembles the super method calls in other languages (like PHP and Java).
+[![jsperf-0.6.1](/test/jsperf-0.6.1.png)](http://jsperf.com/fun-with-method-overrides/8)
 
-The new classy version(s) (0.7+) do an optimisation there. It is relatively easy to change the whole *super calls design* to match the other approaches (mostly NFE), however it will make code
-less flexible, less abstract and more verbose. For my use-cases, of this micro-framework, this is not as important, but one should take this into account if needed.
+
+The whole point (and bottleneck) of performances is the *super method calls*. Classy.js uses an abstraction which resembles the super method calls in other OOP-like languages (like PHP and Java). The bottleneck (in Classy) has two parts. One is that **recursion** is used to handle super calls and the other is the **arguments.slice** issue.
+
+It is relatively easy to change the whole *super calls design* to match the other approaches (either resig-Closure or NFE), however it will make code less flexible, less abstract and more verbose. For my use-cases, of this micro-framework, this is not as important, but one should take this into account if needed.
+
+In any case, i wanted to optimise the code without losing the flexibility and abstraction provided (else there is no point). The criterion is [@ejohn's OOP closure performance](http://ejohn.org/blog/simple-javascript-inheritance/) (for vanilla super calls and NFE-style performance it needs to hardcode and remove almost all the flexibility of the library, so one need not use it if the need is such).
+
+Initially tried to remove the **recursion bottleneck** by re-assigning the $super method to the $super_super method in each call (in a closure-like style). This resulted in increased performance by about 20%, but still classy $super calls were way slower.
+Plus it also introduced a bug when circular-nested super calls are made (see tests/test-super-ciruclar.js). 
+The relevant jsperf tests (for Classy 0.7.1-0.7.4) are [here](http://jsperf.com/fun-with-method-overrides-3/2).
+
+Then tried to remove the **arguments.slice bottleneck** (and the recursion, and also fix the previous bug). This resulted in two updates, a new  **method $superv** (super method with vector arguments) and a performance increase of **500% when using the $superv method** (which accepts arguments as vector/array) (five times faster) and **20% when using the $super method** , making classy super calls comparable (if not faster) to the closure-style super calls.
+The relevant jsperf tests (for Classy 0.7.6) are [here](http://jsperf.com/fun-with-method-overrides-3/6).
+
+
+[![jsperf-0.7.6](/test/jsperf-0.7.6.png)](http://jsperf.com/fun-with-method-overrides-3/6)
+
+

@@ -153,12 +153,11 @@
         
         // this.$super('method', a, b);
         // this.$super('method', a, b);
-        $SUPER = function( superClass/*, thisClass*/ ) {
+        $SUPER = function( superClass ) {
             // return the function to handle the super call, handling possible recursion if needed
             var _super_super = superClass.$super || function( ){ }, called = null;
             function _super( method /*, var args here.. */ ) { 
                 var r, l;
-                //this.$super = _super_super;
                 if ( called === method )
                 {
                     // no recursion faster instead of recursing on this.$super and walking the prototype
@@ -173,7 +172,6 @@
                     r = l ? superClass[method].apply(this, slice(arguments, 1)) : superClass[method].call(this);
                     called = null;
                 }
-                //this.$super = _super;
                 return r;
             }
             return _super;
@@ -181,12 +179,11 @@
         
         // this.$superv('method', [a, b]);
         // this.$superv('method', [a, b]);
-        $SUPER_WITH_ARGS = function( superClass/*, thisClass*/ ) {
+        $SUPER_VECTOR = function( superClass ) {
             // return the function to handle the super call, handling possible recursion if needed
             var _super_super = superClass.$superv || function( ){ }, called = null;
             function _super( method, args ) { 
                 var r, l;
-                //this.$superv = _super_super;
                 if ( called === method )
                 {
                     // no recursion faster instead of recursing on this.$super and walking the prototype
@@ -200,48 +197,10 @@
                     r = l ? superClass[method].apply(this, args) : superClass[method].call(this);
                     called = null;
                 }
-                //this.$superv = _super;
                 return r;
             }
             return _super;
         },
-        
-        /*
-        // alternative (lot faster) abstract super calls
-        // this.$sup.$method.call(this, a, b);
-        // this.$sup.$method.call(this, a, b);
-        $SUP = function( superClass ) {
-            var _sup_sup = superClass.$sup || function( ){ return function(){}; };
-            function _sup( method ) { 
-                var m = superClass[method];
-                return function( ) {
-                    this.$sup = _sup_sup; 
-                    // http://jsperf.com/ternary-vs-and-or-vs-if-else
-                    var r = arguments.length ? m.apply(this, arguments) : m.call(this);
-                    this.$sup = _sup;
-                    return r;
-                };
-            }
-            return _sup;
-        },
-        
-        // alternative abstract super calls (2)
-        // this.method.$super(a, b);
-        // this.method.$super(a, b);
-        $SUP2 = function( superClass, method ) {
-            // return the function to handle the super call, handling possible recursion if needed
-            var m = superClass[method], _super_super = m.$super || function( ){ };
-            function _super( ) { 
-                // no recursion faster instead of recursing on this.$super and walking the prototype
-                this[method].$super = _super_super;
-                // .call is faster than .apply
-                var r = arguments.length ? m.apply(this, arguments) : m.call(this);
-                this[method].$super = _super;
-                return r;
-            }
-            return _super;
-        },
-        */
         
         /**[DOC_MARKDOWN]
         * __Method__: *Merge*
@@ -374,8 +333,7 @@
             var dummyConstructor, C, __static__ = null, 
                 $static = superClass.$static || null,
                 superClassProto = superClass[PROTO], 
-                i, l, prop, key, val, T, thisProto
-                ,method, $super, $sup
+                i, l, prop, key, val, T 
             ;
             // fix issue when constructor is missing
             if ( !hasProperty(subClassProto, CONSTRUCTOR) )
@@ -399,41 +357,10 @@
                 $static = mergeUnique( $static || [], Keys( __static__ ) );
             }
             
-            // add $super method references
-            /*for (methodname in subClassProto)
-            {
-                if ( ("$super" !== methodname) && (T_FUNC === get_type((method = subClassProto[methodname]))) )
-                {
-                    supermethod = superClassProto[methodname];
-                    if ( (T_FUNC === get_type(supermethod)) && (method !== supermethod) )
-                    {
-                        method.$sup = supermethod;
-                    }
-                    else if (method.$sup)
-                    {
-                        delete method.$sup;
-                    }
-                }
-            }*/
             C[PROTO] = Alias( Create( superClassProto ), namespace, aliases );
             C[PROTO] = Merge( C[PROTO], subClassProto );
-            thisProto = C[PROTO];
             
-            // add $super method references (2)
-            /*$super = $SUPER( superClassProto ); $sup = $SUP( superClassProto );
-            for (method in superClassProto)
-            {
-                if ( T_FUNC === get_type(superClassProto[method]) ) 
-                {
-                    $sup[ '$' + method ] = $sup( method );
-                    if ( T_FUNC === get_type(thisProto[method]) ) 
-                    {
-                        thisProto[method].$super = $SUP2(superClassProto, method);
-                    }
-                }
-            }*/
-            
-            defineProperties( thisProto, {
+            defineProperties( C[PROTO], {
                 
                 constructor: {
                     value: C,
@@ -449,21 +376,15 @@
                     configurable: true
                 },
                 
-                /*$sup: {
-                    value: $sup,
-                    enumerable: false,
-                    writable: true,
-                    configurable: true
-                },*/
-                
                 $superv: {
-                    value: $SUPER_WITH_ARGS( superClassProto, thisProto ),
+                    value: $SUPER_VECTOR( superClassProto ),
                     enumerable: false,
                     writable: true,
                     configurable: true
                 },
+                
                 $super: {
-                    value: /*$super*/ $SUPER( superClassProto, thisProto ),
+                    value: $SUPER( superClassProto ),
                     enumerable: false,
                     writable: true,
                     configurable: true
@@ -574,8 +495,10 @@
         *     
         *     // class constructor
         *     constructor: function(a, b) {
-        *         // call super constructor
+        *         // call super constructor (slower)
         *         this.$super('constructor', a, b);
+        *         // call super vector (args) constructor (lot faster)
+        *         //this.$superv('constructor', [a, b]);
         *     },
         *     
         *     // class method

@@ -99,8 +99,10 @@ var aChild = Classy.Class(
     
     // class constructor
     constructor: function(a, b) {
-        // call super constructor
+        // call super constructor (slower)
         this.$super('constructor', a, b);
+        // call super vector (args) constructor (lot faster)
+        //this.$superv('constructor', [a, b]);
     },
     
     // class method
