@@ -44,7 +44,7 @@
             }
         });
     
-    var classy073 = {}, classy074 = {};
+    var classy073 = {}, classy = {};
     classy073.Class1 = Classy073.Class({
         constructor: function( ){ },
         _start:0,
@@ -56,53 +56,41 @@
     classy073.Class3 = Classy073.Class(classy073.Class2, {
         depth: function( ) { return this.$super('depth')+1; }
     });
-    classy074.Class1 = Classy074.Class({
+    classy.Class1 = Classy.Class({
         constructor: function( ){  },
         _start:0,
         depth: function( ) { return this._start; }
     });
-    classy074.Class2 = Classy074.Class(classy074.Class1, {
+    classy.Class2 = Classy.Class(classy.Class1, {
         depth: function( ) { return this.$super('depth')+1; }
     });
-    classy074.Class3 = Classy074.Class(classy074.Class2, {
+    classy.Class3 = Classy.Class(classy.Class2, {
         depth: function( ) { return this.$super('depth')+1; }
     });
-    /*classy074.Class2Sup = Classy074.Class(classy074.Class1, {
-        depth: function( ) { return this.$sup.$depth.call(this)+1; }
-    });
-    classy074.Class3Sup = Classy074.Class(classy074.Class2Sup, {
-        depth: function( ) { return this.$sup.$depth.call(this)+1; }
-    });
-    classy074.Class2Sup2 = Classy074.Class(classy074.Class1, {
-        depth: function( ) { return this.depth.$super.call(this)+1; }
-    });
-    classy074.Class3Sup2 = Classy074.Class(classy074.Class2Sup2, {
-        depth: function( ) { return this.depth.$super.call(this)+1; }
-    });*/
-    classy074.Class2V = Classy074.Class(classy074.Class1, {
+    classy.Class2V = Classy.Class(classy.Class1, {
         depth: function( ) { return this.$superv('depth')+1; }
     });
-    classy074.Class3V = Classy074.Class(classy074.Class2V, {
+    classy.Class3V = Classy.Class(classy.Class2V, {
         depth: function( ) { return this.$superv('depth')+1; }
+    });
+    classy.Class2NFE = Classy.Class(classy.Class1, {
+        depth: function( ) { return $method.$super.call(this)+1; }
+    });
+    classy.Class3NFE = Classy.Class(classy.Class2NFE, {
+        depth: function( ) { return $method.$super.call(this)+1; }
     });
     
     var vanilla = new vanillaStyle.Class3();
     var closure = new closureStyle.Class3();
     var cl073 = new classy073.Class3();
-    var cl074 = new classy074.Class3();
-    var cl074V = new classy074.Class3V();
-    //var cl074Sup = new classy074.Class3Sup();
-    //var cl074Sup2 = new classy074.Class3Sup2();
+    var cl = new classy.Class3();
+    var clV = new classy.Class3V();
+    var clNFE = new classy.Class3NFE();
 
-    /*for (var i=0; i<5; i++) 
+    /*for (var i=0; i<3; i++) 
     {
-        console.log([cl073.depth(), cl074.depth(), cl074Sup.depth(), cl074Sup2.depth()]);
+        console.log([cl073.depth(), cl.depth(), clV.depth(), clNFE.depth()]);
     }*/
-    /*for (var i=0; i<5; i++) 
-    {
-        console.log([closure.depth(), cl073.depth(), cl074.depth(), cl074V.depth()]);
-    }
-    return;*/
     
     loader.style.display = "inline-block";
     new Benchmark.Suite( )
@@ -110,11 +98,14 @@
         .add('Classy073 this.$super("method"), recursion', function() {
             cl073.depth( );
         })
-        .add('Classy074 this.$super("method"), NO recursion', function() {
-            cl074.depth( );
+        .add('Classy this.$super("method"), NO recursion', function() {
+            cl.depth( );
         })
-        .add('Classy074 this.$superv("method"), with args', function() {
-            cl074V.depth( );
+        .add('Classy this.$superv("method"), with args', function() {
+            clV.depth( );
+        })
+        .add('Classy $method.$super.call(this), NFE', function() {
+            clNFE.depth( );
         })
         .add('closure (Resig)', function() {
             closure.depth( );
@@ -122,12 +113,6 @@
         .add('vanilla BASE', function() {
             vanilla.depth( );
         })
-        /*.add('Classy074 this.$sup.$method.call(this)', function() {
-            cl074Sup.depth( );
-        })
-        .add('Classy074 this.method.$super.call(this)', function() {
-            cl074Sup2.depth( );
-        })*/
         // add listeners
         .on('cycle', function(event) {
             buff += String(event.target) + "\n\n";

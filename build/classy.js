@@ -1,7 +1,7 @@
 /**
 *
 *   Classy.js
-*   @version: 0.7.6
+*   @version: 0.8
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -36,7 +36,7 @@
 /**
 *
 *   Classy.js
-*   @version: 0.7.6
+*   @version: 0.8
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -53,8 +53,8 @@
     [/DOC_MARKDOWN]**/
     
     var CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO__ = "__proto__", __STATIC__ = "__static__",
-        Str = String, Num = Number, Regex = RegExp, Arr = Array, AP = Arr[PROTO], Obj = Object, OP = Obj[PROTO], Func = Function, FP = Func[PROTO],
-        slice = FP.call.bind(AP.slice), toStr = FP.call.bind(OP.toString), hasProperty = FP.call.bind(OP.hasOwnProperty), 
+        Str = String, Num = Number, Regex = RegExp, Arr = Array, AP = Arr[PROTO], Obj = Object, OP = Obj[PROTO], Func = Function, FP = Func[PROTO], toStr = FP.call.bind(OP.toString), stringifyFunc = FP.call.bind(FP.toString),
+        slice = FP.call.bind(AP.slice), hasProperty = FP.call.bind(OP.hasOwnProperty), 
         propertyIsEnum = FP.call.bind(OP.propertyIsEnumerable), Keys = Obj.keys, defineProperty = Obj.defineProperty,
         
         is_instance = function(o, t) { return o instanceof t; },
@@ -191,25 +191,25 @@
         $SUPER = function( superClass ) {
             // return the function to handle the super call, handling possible recursion if needed
             var _super_super = superClass.$super || function( ){ }, called = null;
-            function _super( method /*, var args here.. */ ) { 
-                var r, l;
+            /*, var args here.. */
+            /* use up to 10 arguments for speed, use $superv for arbitrary arguments */
+            return function( method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9 ) { 
+                var r;
                 if ( called === method )
                 {
                     // no recursion faster instead of recursing on this.$super and walking the prototype
-                    r = _super_super.apply(this, arguments);
+                    r = _super_super.call(this, method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
                 }
                 else
                 {
                     // http://jsperf.com/argument-slicers
                     // .call is faster than .apply
                     called = method;
-                    l = arguments.length-1;
-                    r = l ? superClass[method].apply(this, slice(arguments, 1)) : superClass[method].call(this);
+                    r = superClass[method].call(this, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
                     called = null;
                 }
                 return r;
             }
-            return _super;
         },
         
         // this.$superv('method', [a, b]);
@@ -217,7 +217,7 @@
         $SUPER_VECTOR = function( superClass ) {
             // return the function to handle the super call, handling possible recursion if needed
             var _super_super = superClass.$superv || function( ){ }, called = null;
-            function _super( method, args ) { 
+            return function( method, args ) { 
                 var r, l;
                 if ( called === method )
                 {
@@ -234,7 +234,31 @@
                 }
                 return r;
             }
-            return _super;
+        },
+        
+        FUNC_HEADER = /^function\s+([a-zA-Z_][0-9a-zA-Z_]+)?([^{]*){/,
+        _FUNC = 0,
+        
+        // http://stackoverflow.com/a/20473505/3591273
+        createNamedFunc = function( funcStr ) {
+            return new Func("return "+funcStr+";")( );
+        },
+        
+        // $method.$super.call(this, a, b);
+        // $method.$super.call(this, a, b);
+        $SUPER_NFE = function( name, method, superClass, $super ) {
+            var superMethod = superClass[name] || function( ){ },
+                methodStr = stringifyFunc( method ), newMethod,
+                m = methodStr.match( FUNC_HEADER ),
+                mname = m[1] || ("_mf"+(++_FUNC) + "_")
+            ;
+            newMethod = createNamedFunc([
+                "function ", mname, m[2], "{", "\n", 
+                "var $method=", mname, ";", "\n", 
+                methodStr.slice( m[0].length )
+            ].join(""));
+            newMethod[$super||'$super'] = superMethod;
+            return newMethod;
         },
         
         /**[DOC_MARKDOWN]
@@ -368,7 +392,7 @@
             var dummyConstructor, C, __static__ = null, 
                 $static = superClass.$static || null,
                 superClassProto = superClass[PROTO], 
-                i, l, prop, key, val, T 
+                i, l, prop, key, val, T, mname, method
             ;
             // fix issue when constructor is missing
             if ( !hasProperty(subClassProto, CONSTRUCTOR) )
@@ -391,6 +415,15 @@
                 // store "static keys" for enabling subclass inheritance/extension if needed
                 $static = mergeUnique( $static || [], Keys( __static__ ) );
             }
+            
+            // add $SUPER_NFE functionality as well
+            /*for (mname in subClassProto)
+            {
+                if ( /*"constructor" !== mname &&* / T_FUNC === get_type((method = subClassProto[mname])) )
+                {
+                    subClassProto[mname] = $SUPER_NFE(mname, method, superClassProto, '$super');
+                }
+            }*/
             
             C[PROTO] = Alias( Create( superClassProto ), namespace, aliases );
             C[PROTO] = Merge( C[PROTO], subClassProto );
@@ -751,7 +784,7 @@
     // export it
     exports['Classy'] = {
         
-        VERSION: "0.7.6",
+        VERSION: "0.8",
         
         Type: get_type,
         
