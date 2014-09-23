@@ -181,7 +181,7 @@ for classy.js (and updates). First test with previous classy.js version (0.6.1) 
 
 The whole point (and bottleneck) of performances is the *super method calls*. Classy.js uses an abstraction which resembles the super method calls in other OOP-like languages (like PHP and Java). The bottleneck (in Classy) has two parts. One is that **recursion** is used to handle super calls and the other is the **arguments.slice** issue.
 
-It is relatively easy to change the whole *super calls design* to match the other approaches (either resig-Closure or NFE), however it will make code less flexible, less abstract and more verbose. For my use-cases, of this micro-framework, this is not as important, but one should take this into account if needed.
+It is relatively easy to change the whole *super calls design* to match the other approaches (eg NFE), however it will make code less flexible, less abstract and more verbose. For my use-cases, of this micro-framework, this is not as important, but one should take this into account if needed.
 
 In any case, i wanted to optimise the code without losing the flexibility and abstraction provided (else there is no point). The criterion is [@ejohn's OOP closure performance](http://ejohn.org/blog/simple-javascript-inheritance/) (for vanilla super calls and NFE-style performance it needs to hardcode and remove almost all the flexibility of the library, so one need not use it if the need is such).
 
@@ -189,7 +189,7 @@ Initially tried to remove the **recursion bottleneck** by re-assigning the $supe
 Plus it also introduced a bug when circular-nested super calls are made (see tests/test-super-ciruclar.js). 
 The relevant jsperf tests (for Classy 0.7.1-0.7.4) are [here](http://jsperf.com/fun-with-method-overrides-3/2).
 
-Then tried to remove the **arguments.slice bottleneck** (and the recursion, and also fix the previous bug). This resulted in two updates, a new  **method $superv** (super method with vector arguments) and a performance increase of **500% when using the $superv method** (which accepts arguments as vector/array) (five times faster) and **20% when using the $super method** , making classy super calls comparable (if not faster) to the closure-style super calls.
+Then tried to remove the **arguments.slice bottleneck** (and the recursion, and also fix the previous bug). This resulted in two updates, a new  **method $superv** (super method with vector arguments) and a performance increase of **16x times faster when using the $superv method** and **6x times faster when using the $super method** , making classy super calls comparable (if not faster) to the closure-style super calls.
 The relevant jsperf tests (for Classy 0.7.6) are [here](http://jsperf.com/fun-with-method-overrides-3/6).
 
 
