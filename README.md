@@ -4,7 +4,7 @@ classy.js
 [classy.js](https://raw.githubusercontent.com/foo123/classy.js/master/build/classy.js),  [classy.min.js](https://raw.githubusercontent.com/foo123/classy.js/master/build/classy.min.js)
 
 
-Object-Oriented micro-framework ( ~5kB minified ) for JavaScript
+Object-Oriented mini-framework ( ~5kB minified, ~3kB gzipped ) for JavaScript
 
 __Example:__    [API Reference](/api-reference.md)
 
@@ -40,7 +40,7 @@ __Example:__    [API Reference](/api-reference.md)
         constructor: function(a, b) {
             // call super constructor (slower)
             this.$super('constructor', a, b);
-            // call super vector (args) constructor (lot faster)
+            // call super vector (args) constructor (faster)
             //this.$superv('constructor', [a, b]);
         },
         
@@ -198,7 +198,7 @@ The relevant jsperf tests (for Classy 0.7.6) are [here](http://jsperf.com/fun-wi
 
 **UPDATE**
 
-Finally, made a way to have NFE-style (named-function invocation) super calls in classy.js, in a generic way (ok, with a little configuration per class, if-and-only-if needed), see examples and tests under test/ folder.
+Finally, made a way to have NFE-style (named-function invocation) super calls in classy.js (v. 0.8), in a generic way (ok, with a little configuration per class, if-and-only-if needed), see examples and tests under test/ folder.
 
 The relevant jsperf tests are [here](http://jsperf.com/fun-with-method-overrides-3/7)
 

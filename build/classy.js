@@ -1,7 +1,7 @@
 /**
 *
 *   Classy.js
-*   @version: 0.8
+*   @version: 0.8.1
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -36,7 +36,7 @@
 /**
 *
 *   Classy.js
-*   @version: 0.8
+*   @version: 0.8.1
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -52,16 +52,26 @@
     *
     [/DOC_MARKDOWN]**/
     
-    var CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO__ = "__proto__", __STATIC__ = "__static__",
-        Str = String, Num = Number, Regex = RegExp, Arr = Array, /*AP = Arr[PROTO],*/ 
+    var CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO__ = "__proto__", 
+        __STATIC__ = "__static__", /*__PRIVATE__ = "__private__", PRIVATE = "$private",*/
+        SUPER = "$super", STATIC = "$static", CLASS = "$class",
         Obj = Object, OP = Obj[PROTO], Func = Function, FP = Func[PROTO], 
+        Str = String, Num = Number, Regex = RegExp, Arr = Array, 
         toStr = FP.call.bind(OP.toString), stringifyFunc = FP.call.bind(FP.toString),
-        /*slice = FP.call.bind(AP.slice),*/ hasProperty = FP.call.bind(OP.hasOwnProperty), 
+        /*AP = Arr[PROTO], slice = FP.call.bind(AP.slice),*/ 
+        hasProperty = FP.call.bind(OP.hasOwnProperty), 
         propertyIsEnum = FP.call.bind(OP.propertyIsEnumerable), Keys = Obj.keys, defineProperty = Obj.defineProperty,
         
         is_instance = function(o, t) { return o instanceof t; },
         typeOf = function( v ) { return typeof( v ); },
         type_error = function( msg ) { throw new TypeError( msg ); },
+        
+        // http://stackoverflow.com/a/20473505/3591273
+        createScopedFunc = function( func, scope ) {
+            var k, names = Keys( scope ), vars = [ ];
+            for (k=0; k<names.length; k++) vars.push( scope[ names[k] ] );
+            return new Func( names.join(','), func ).apply( {}, vars );
+        },
         
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperties
@@ -69,19 +79,11 @@
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/propertyIsEnumerable?redirectlocale=en-US&redirectslug=JavaScript%2FReference%2FGlobal_Objects%2FObject%2FpropertyIsEnumerable
         
         // types
-        T_NUM = 2,
-        T_NAN = 3,
         //T_INF = 3,
-        T_BOOL = 4,
-        T_STR = 8,
-        T_CHAR = 9,
-        T_ARRAY = 16,
-        T_OBJ = 32,
-        T_FUNC = 64,
-        T_REGEX = 128,
-        T_NULL = 256,
-        T_UNDEF = 512,
-        T_UNKNOWN = 1024,
+        T_NUM = 2, T_NAN = 3,  T_BOOL = 4,
+        T_STR = 8, T_CHAR = 9,
+        T_ARRAY = 16, T_OBJ = 32, T_FUNC = 64,  T_REGEX = 128,
+        T_NULL = 256, T_UNDEF = 512, T_UNKNOWN = 1024,
         get_type = function( v ) {
             var type_of, to_string;
             
@@ -112,7 +114,7 @@
             var i, l = a2.length, a = [ ].concat( a1 );
             for (i=0; i<l; i++)
             {
-                if ( a.indexOf( a2[i] ) > -1 ) continue;
+                if ( -1 < a.indexOf( a2[i] ) ) continue;
                 a.push( a2[i] );
             }
             return a;
@@ -188,80 +190,62 @@
             return TypeObject;
         },
         
+        // this.$superv('method', [a, b]);
         // this.$super('method', a, b);
-        // this.$super('method', a, b);
-        $SUPER = function( superClass ) {
+        $SUPER = function( superClass, vectorSuper ) {
             // return the function to handle the super call, handling possible recursion if needed
-            var _super_super = superClass.$super || function( ){ }, called = null;
-            /*, var args here.. */
-            /* use up to 10 arguments for speed, use $superv for arbitrary arguments */
-            return function( method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9 ) { 
-                var r;
-                if ( called === method )
-                {
-                    // no recursion faster instead of recursing on this.$super and walking the prototype
-                    r = _super_super.call(this, method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
+            var _super_super, called = null;
+            if ( vectorSuper )
+            {
+                _super_super = superClass[SUPER+'v'] || function( ){ };
+                return function( method, args ) { 
+                    var r, m;
+                    if ( called === method )
+                    {
+                        // no recursion faster instead of recursing on this.$super and walking the prototype
+                        r = _super_super.call(this, method, args);
+                    }
+                    else if ( m=superClass[method] )
+                    {
+                        // .call is faster than .apply
+                        called = method;
+                        r = args && args.length ? m.apply(this, args) : m.call(this);
+                        called = null;
+                    }
+                    return r;
                 }
-                else
-                {
-                    // http://jsperf.com/argument-slicers
-                    // .call is faster than .apply
-                    called = method;
-                    r = superClass[method].call(this, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
-                    called = null;
+            }
+            else
+            {
+                _super_super = superClass[SUPER] || function( ){ };
+                /*, var args here.. */
+                /* use up to 10 arguments for speed, use $superv for arbitrary arguments */
+                return function( method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9 ) { 
+                    var r, m;
+                    if ( called === method )
+                    {
+                        // no recursion faster instead of recursing on this.$super and walking the prototype
+                        r = _super_super.call(this, method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
+                    }
+                    else if ( m=superClass[method] )
+                    {
+                        // http://jsperf.com/argument-slicers
+                        // .call is faster than .apply
+                        called = method;
+                        r = m.call(this, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
+                        called = null;
+                    }
+                    return r;
                 }
-                return r;
             }
         },
         
-        // this.$superv('method', [a, b]);
-        // this.$superv('method', [a, b]);
-        $SUPER_VECTOR = function( superClass ) {
-            // return the function to handle the super call, handling possible recursion if needed
-            var _super_super = superClass.$superv || function( ){ }, called = null;
-            return function( method, args ) { 
-                var r, l;
-                if ( called === method )
-                {
-                    // no recursion faster instead of recursing on this.$super and walking the prototype
-                    r = _super_super.call(this, method, args);
-                }
-                else
-                {
-                    // .call is faster than .apply
-                    called = method;
-                    l = args ? args.length : 0;
-                    r = l ? superClass[method].apply(this, args) : superClass[method].call(this);
-                    called = null;
-                }
-                return r;
-            }
-        },
-        
-        FUNC_HEADER = /^function\s*([a-zA-Z_][0-9a-zA-Z_]+)?([^{]*){/,
-        _FUNC = 0,
-        
-        // http://stackoverflow.com/a/20473505/3591273
-        createScopedFunc = function( funcStr, scope ) {
-            var k, names = Keys(scope || {}), vars = [ ];
-            for (k=0; k<names.length; k++) vars.push( scope[ names[k] ] );
-            return new Func(names.join(','),"return "+funcStr+";").apply({}, vars);
-        },
-        
+        // $super.method.call(this, a, b);
         // $method.$super.call(this, a, b);
-        // $method.$super.call(this, a, b);
-        $SUPER_NFE = function( name, method, superClass, scope, $super ) {
-            var superMethod = superClass[name] || function( ){ },
-                methodStr = stringifyFunc( method ), newMethod, m, mname
-            ;
-            if ( !(m=methodStr.match( FUNC_HEADER )) ) return method;
-            mname = m[1] || ("_mf"+(++_FUNC) + "_");
-            newMethod = createScopedFunc([
-                "function ", mname, m[2], "{", "\n", 
-                "var $method=", mname, ";", "\n", 
-                methodStr.slice( m[0].length )
-            ].join(""), scope);
-            newMethod[$super||'$super'] = superMethod;
+        $SCOPED = function( name, method, superClass, scope ) {
+            (scope=scope||{})[SUPER] = superClass;
+            var newMethod = createScopedFunc("var $method="+stringifyFunc( method )+"; return $method;", scope);
+            newMethod[SUPER] = superClass[name] || function( ){ };
             return newMethod;
         },
         
@@ -390,44 +374,44 @@
         // http://dmitrysoshnikov.com/ecmascript/javascript-the-core/
         // http://stackoverflow.com/questions/16063394/prototypical-inheritance-writing-up/16063711#16063711
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty/Additional_examples
-        Extends = function(superClass, subClassProto, namespace, aliases, nfe_super) {
+        Extends = function( superClass, subClassProto, namespace, aliases, scoped_super ) {
             superClass = superClass || Obj;
             subClassProto = subClassProto || {};
-            var dummyConstructor, C, __static__ = null, 
-                $static = superClass.$static || null,
+            var $static = superClass[STATIC] || null, 
                 superClassProto = superClass[PROTO], 
+                C, __static__ = null, 
                 i, l, prop, key, val, T, mname, method
             ;
+            
             // fix issue when constructor is missing
-            if ( !hasProperty(subClassProto, CONSTRUCTOR) )
-            {
-                dummyConstructor = function() {};
-                subClassProto[CONSTRUCTOR] = C = dummyConstructor;
-            }
-            else
-            {
-                C = subClassProto[CONSTRUCTOR];
-            }
+            if ( !hasProperty(subClassProto, CONSTRUCTOR) ) subClassProto[CONSTRUCTOR] = function(){};
+            
+            C = subClassProto[CONSTRUCTOR];
             
             if ( hasProperty(subClassProto, __STATIC__) )
             {
                 // $static / __static__ props/methods and associated keys
                 // __static__ = actual props/methods
                 __static__ = subClassProto[__STATIC__];
-                delete subClassProto[__STATIC__];
                 // $static = props/methods keys
                 // store "static keys" for enabling subclass inheritance/extension if needed
                 $static = mergeUnique( $static || [], Keys( __static__ ) );
+                delete subClassProto[__STATIC__];
             }
             
-            // add $SUPER_NFE functionality as well
-            if ( nfe_super && nfe_super.methods && nfe_super.methods.length )
+            // add $SUPER_SCOPED (NFE) functionality as well
+            if ( scoped_super && scoped_super.methods && scoped_super.methods.length )
             {
-                for (mname=0; mname<nfe_super.methods.length; mname++)
+                for (i=0; i<scoped_super.methods.length; i++)
                 {
-                    if ( T_FUNC === get_type((method = subClassProto[nfe_super.methods[mname]])) )
+                    mname = scoped_super.methods[ i ];
+                    if ( T_FUNC === get_type((method = subClassProto[mname])) )
                     {
-                        subClassProto[nfe_super.methods[mname]] = $SUPER_NFE(nfe_super.methods[mname], method, superClassProto, nfe_super.scope, '$super');
+                        subClassProto[mname] = $SCOPED(
+                            mname, method, 
+                            superClassProto, 
+                            scoped_super.scope
+                        );
                     }
                 }
             }
@@ -435,53 +419,41 @@
             C[PROTO] = Alias( Create( superClassProto ), namespace, aliases );
             C[PROTO] = Merge( C[PROTO], subClassProto );
             
-            defineProperties( C[PROTO], {
-                
-                constructor: {
-                    value: C,
-                    enumerable: false,
-                    writable: true,
-                    configurable: true
-                },
-                
-                $class: {
-                    value: C,
-                    enumerable: false,
-                    writable: true,
-                    configurable: true
-                },
-                
-                $superv: {
-                    value: $SUPER_VECTOR( superClassProto ),
-                    enumerable: false,
-                    writable: true,
-                    configurable: true
-                },
-                
-                $super: {
-                    value: $SUPER( superClassProto ),
-                    enumerable: false,
-                    writable: true,
-                    configurable: true
-                }
-            });
+            prop = { };
+            prop[CLASS] = prop[CONSTRUCTOR] = {
+                value: C,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            };
+            prop[SUPER] = {
+                value: $SUPER( superClassProto ),
+                enumerable: false,
+                writable: true,
+                configurable: true
+            };
+            prop[SUPER+'v'] = {
+                value: $SUPER( superClassProto, true ),
+                enumerable: false,
+                writable: true,
+                configurable: true
+            };
+            defineProperties( C[PROTO], prop );
             
-            defineProperties( C, {
-                
-                $super: {
-                    value: superClass,
-                    enumerable: false,
-                    writable: true,
-                    configurable: true
-                },
-                
-                $static: {
-                    value: $static,
-                    enumerable: false,
-                    writable: true,
-                    configurable: true
-                }
-            });
+            prop = { };
+            prop[STATIC] = {
+                value: $static,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            };
+            prop[SUPER] = {
+                value: superClass,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            };
+            defineProperties( C, prop );
             
             if ( $static )
             {
@@ -520,6 +492,7 @@
                 // define (extendable) static props/methods
                 defineProperties( C, prop );
             }
+
             return C;
         },
 
@@ -572,7 +545,7 @@
         *     constructor: function(a, b) {
         *         // call super constructor (slower)
         *         this.$super('constructor', a, b);
-        *         // call super vector (args) constructor (lot faster)
+        *         // call super vector (args) constructor (faster)
         *         //this.$superv('constructor', [a, b]);
         *     },
         *     
@@ -771,12 +744,12 @@
                         Merge(_protomix, _proto), 
                         _extends.namespace || null,
                         _extends.as || null,
-                        _qualifier.NFE || null
+                        _qualifier.scoped || null
                     );
                 }
                 else
                 {
-                    _class = Extends(_extends, Merge(_protomix, _proto), null, null, _qualifier.NFE || null);
+                    _class = Extends(_extends, Merge(_protomix, _proto), null, null, _qualifier.scoped || null);
                 }
             }
             
@@ -792,7 +765,7 @@
     // export it
     exports['Classy'] = {
         
-        VERSION: "0.8",
+        VERSION: "0.8.1",
         
         Type: get_type,
         

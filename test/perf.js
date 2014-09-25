@@ -61,56 +61,61 @@
         _start:0,
         depth: function( ) { return this._start; }
     });
-    classy.Class2 = Classy.Class(classy.Class1, {
+    classy.Class2Super = Classy.Class(classy.Class1, {
         depth: function( ) { return this.$super('depth')+1; }
     });
-    classy.Class3 = Classy.Class(classy.Class2, {
+    classy.Class3Super = Classy.Class(classy.Class2Super, {
         depth: function( ) { return this.$super('depth')+1; }
     });
-    classy.Class2V = Classy.Class(classy.Class1, {
+    classy.Class2SuperVector = Classy.Class(classy.Class1, {
         depth: function( ) { return this.$superv('depth')+1; }
     });
-    classy.Class3V = Classy.Class(classy.Class2V, {
+    classy.Class3SuperVector = Classy.Class(classy.Class2SuperVector, {
         depth: function( ) { return this.$superv('depth')+1; }
     });
-    classy.Class2NFE = Classy.Class({extends:classy.Class1, NFE:{methods:['depth'], scope:null}}, {
+    classy.Class2SuperNFE = Classy.Class({extends:classy.Class1, scoped:{methods:['depth'], scope:null}}, {
         depth: function( ) { return $method.$super.call(this)+1; }
     });
-    classy.Class3NFE = Classy.Class({extends:classy.Class2NFE, NFE:{methods:['depth'], scope:null}}, {
+    classy.Class3SuperNFE = Classy.Class({extends:classy.Class2SuperNFE, scoped:{methods:['depth'], scope:null}}, {
         depth: function( ) { return $method.$super.call(this)+1; }
+    });
+    classy.Class2SuperScoped = Classy.Class({extends:classy.Class1, scoped:{methods:['depth'], scope:null}}, {
+        depth: function( ) { return $super.depth.call(this)+1; }
+    });
+    classy.Class3SuperScoped = Classy.Class({extends:classy.Class2SuperScoped, scoped:{methods:['depth'], scope:null}}, {
+        depth: function( ) { return $super.depth.call(this)+1; }
     });
     
-    var vanilla = new vanillaStyle.Class3();
-    var closure = new closureStyle.Class3();
-    var cl073 = new classy073.Class3();
-    var cl = new classy.Class3();
-    var clV = new classy.Class3V();
-    var clNFE = new classy.Class3NFE();
+    var vanilla = new vanillaStyle.Class3( );
+    var closure = new closureStyle.Class3( );
+    var cl073 = new classy073.Class3( );
+    var clSuper = new classy.Class3Super( );
+    var clSuperVector = new classy.Class3SuperVector( );
+    var clSuperNFE = new classy.Class3SuperNFE( );
+    var clSuperScoped = new classy.Class3SuperScoped( );
 
-    /*for (var i=0; i<3; i++) 
-    {
-        console.log([cl073.depth(), cl.depth(), clV.depth(), clNFE.depth()]);
-    }*/
-    
     loader.style.display = "inline-block";
     new Benchmark.Suite( )
         // add tests
-        .add('closure (Resig)', function() {
+        .add('Closure (Resig)', function() {
             closure.depth( );
         })
         .add('Classy073 $super, this.$super("method")', function() {
             cl073.depth( );
         })
-        .add('Classy $super, this.$super("method")', function() {
-            cl.depth( );
+        .add('Classy Super, this.$super("method")', function() {
+            clSuper.depth( );
         })
-        .add('Classy $superv, this.$superv("method")', function() {
-            clV.depth( );
+        .add('Classy SuperVector, this.$superv("method")', function() {
+            clSuperVector.depth( );
         })
-        .add('Classy superNFE, $method.$super.call(this)', function() {
-            clNFE.depth( );
+        .add('Classy SuperNFE, $method.$super.call(this)', function() {
+            clSuperNFE.depth( );
         })
-        .add('vanilla OOP, base', function() {
+        .add('Classy SuperScoped, $super.method.call(this)', function() {
+            clSuperScoped.depth( );
+        })
+        .add('Vanilla OOP, base', function() {
             vanilla.depth( );
         })
         // add listeners
