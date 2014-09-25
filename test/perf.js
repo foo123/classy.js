@@ -73,10 +73,10 @@
     classy.Class3V = Classy.Class(classy.Class2V, {
         depth: function( ) { return this.$superv('depth')+1; }
     });
-    classy.Class2NFE = Classy.Class(classy.Class1, {
+    classy.Class2NFE = Classy.Class({extends:classy.Class1, NFE:{methods:['depth'], scope:null}}, {
         depth: function( ) { return $method.$super.call(this)+1; }
     });
-    classy.Class3NFE = Classy.Class(classy.Class2NFE, {
+    classy.Class3NFE = Classy.Class({extends:classy.Class2NFE, NFE:{methods:['depth'], scope:null}}, {
         depth: function( ) { return $method.$super.call(this)+1; }
     });
     
@@ -95,22 +95,22 @@
     loader.style.display = "inline-block";
     new Benchmark.Suite( )
         // add tests
-        .add('Classy073 this.$super("method"), recursion', function() {
-            cl073.depth( );
-        })
-        .add('Classy this.$super("method"), NO recursion', function() {
-            cl.depth( );
-        })
-        .add('Classy this.$superv("method"), with args', function() {
-            clV.depth( );
-        })
-        .add('Classy $method.$super.call(this), NFE', function() {
-            clNFE.depth( );
-        })
         .add('closure (Resig)', function() {
             closure.depth( );
         })
-        .add('vanilla BASE', function() {
+        .add('Classy073 $super, this.$super("method")', function() {
+            cl073.depth( );
+        })
+        .add('Classy $super, this.$super("method")', function() {
+            cl.depth( );
+        })
+        .add('Classy $superv, this.$superv("method")', function() {
+            clV.depth( );
+        })
+        .add('Classy superNFE, $method.$super.call(this)', function() {
+            clNFE.depth( );
+        })
+        .add('vanilla OOP, base', function() {
             vanilla.depth( );
         })
         // add listeners

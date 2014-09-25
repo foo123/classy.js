@@ -196,3 +196,11 @@ The relevant jsperf tests (for Classy 0.7.6) are [here](http://jsperf.com/fun-wi
 [![jsperf-0.7.6](/test/jsperf-0.7.6.png)](http://jsperf.com/fun-with-method-overrides-3/6)
 
 
+**UPDATE**
+
+Finally, made a way to have NFE-style (named-function invocation) super calls in classy.js, in a generic way (ok, with a little configuration per class, if-and-only-if needed), see examples and tests under test/ folder.
+
+The relevant jsperf tests are [here](http://jsperf.com/fun-with-method-overrides-3/7)
+
+[![jsperf-0.8](/test/jsperf-0.8.png)](http://jsperf.com/fun-with-method-overrides-3/7)
+

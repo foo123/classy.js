@@ -18,8 +18,10 @@
     [/DOC_MARKDOWN]**/
     
     var CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO__ = "__proto__", __STATIC__ = "__static__",
-        Str = String, Num = Number, Regex = RegExp, Arr = Array, AP = Arr[PROTO], Obj = Object, OP = Obj[PROTO], Func = Function, FP = Func[PROTO], toStr = FP.call.bind(OP.toString), stringifyFunc = FP.call.bind(FP.toString),
-        slice = FP.call.bind(AP.slice), hasProperty = FP.call.bind(OP.hasOwnProperty), 
+        Str = String, Num = Number, Regex = RegExp, Arr = Array, /*AP = Arr[PROTO],*/ 
+        Obj = Object, OP = Obj[PROTO], Func = Function, FP = Func[PROTO], 
+        toStr = FP.call.bind(OP.toString), stringifyFunc = FP.call.bind(FP.toString),
+        /*slice = FP.call.bind(AP.slice),*/ hasProperty = FP.call.bind(OP.hasOwnProperty), 
         propertyIsEnum = FP.call.bind(OP.propertyIsEnumerable), Keys = Obj.keys, defineProperty = Obj.defineProperty,
         
         is_instance = function(o, t) { return o instanceof t; },
@@ -201,27 +203,29 @@
             }
         },
         
-        FUNC_HEADER = /^function\s+([a-zA-Z_][0-9a-zA-Z_]+)?([^{]*){/,
+        FUNC_HEADER = /^function\s*([a-zA-Z_][0-9a-zA-Z_]+)?([^{]*){/,
         _FUNC = 0,
         
         // http://stackoverflow.com/a/20473505/3591273
-        createNamedFunc = function( funcStr ) {
-            return new Func("return "+funcStr+";")( );
+        createScopedFunc = function( funcStr, scope ) {
+            var k, names = Keys(scope || {}), vars = [ ];
+            for (k=0; k<names.length; k++) vars.push( scope[ names[k] ] );
+            return new Func(names.join(','),"return "+funcStr+";").apply({}, vars);
         },
         
         // $method.$super.call(this, a, b);
         // $method.$super.call(this, a, b);
-        $SUPER_NFE = function( name, method, superClass, $super ) {
+        $SUPER_NFE = function( name, method, superClass, scope, $super ) {
             var superMethod = superClass[name] || function( ){ },
-                methodStr = stringifyFunc( method ), newMethod,
-                m = methodStr.match( FUNC_HEADER ),
-                mname = m[1] || ("_mf"+(++_FUNC) + "_")
+                methodStr = stringifyFunc( method ), newMethod, m, mname
             ;
-            newMethod = createNamedFunc([
+            if ( !(m=methodStr.match( FUNC_HEADER )) ) return method;
+            mname = m[1] || ("_mf"+(++_FUNC) + "_");
+            newMethod = createScopedFunc([
                 "function ", mname, m[2], "{", "\n", 
                 "var $method=", mname, ";", "\n", 
                 methodStr.slice( m[0].length )
-            ].join(""));
+            ].join(""), scope);
             newMethod[$super||'$super'] = superMethod;
             return newMethod;
         },
@@ -237,11 +241,11 @@
         *
         [/DOC_MARKDOWN]**/
         Merge = function(/* var args here.. */) { 
-            var args = slice(arguments), argslen, 
+            var args = arguments, argslen, 
                 o1, o2, v, p, i, T;
-            o1 = args.shift() || {}; 
+            o1 = args[0] || {}; 
             argslen = args.length;
-            for (i=0; i<argslen; i++)
+            for (i=1; i<argslen; i++)
             {
                 o2 = args[ i ];
                 if ( T_OBJ === get_type( o2 ) )
@@ -351,7 +355,7 @@
         // http://dmitrysoshnikov.com/ecmascript/javascript-the-core/
         // http://stackoverflow.com/questions/16063394/prototypical-inheritance-writing-up/16063711#16063711
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty/Additional_examples
-        Extends = function(superClass, subClassProto, namespace, aliases) {
+        Extends = function(superClass, subClassProto, namespace, aliases, nfe_super) {
             superClass = superClass || Obj;
             subClassProto = subClassProto || {};
             var dummyConstructor, C, __static__ = null, 
@@ -382,13 +386,16 @@
             }
             
             // add $SUPER_NFE functionality as well
-            /*for (mname in subClassProto)
+            if ( nfe_super && nfe_super.methods && nfe_super.methods.length )
             {
-                if ( /*"constructor" !== mname &&* / T_FUNC === get_type((method = subClassProto[mname])) )
+                for (mname=0; mname<nfe_super.methods.length; mname++)
                 {
-                    subClassProto[mname] = $SUPER_NFE(mname, method, superClassProto, '$super');
+                    if ( T_FUNC === get_type((method = subClassProto[nfe_super.methods[mname]])) )
+                    {
+                        subClassProto[nfe_super.methods[mname]] = $SUPER_NFE(nfe_super.methods[mname], method, superClassProto, nfe_super.scope, '$super');
+                    }
                 }
-            }*/
+            }
             
             C[PROTO] = Alias( Create( superClassProto ), namespace, aliases );
             C[PROTO] = Merge( C[PROTO], subClassProto );
@@ -647,7 +654,7 @@
         *
         [/DOC_MARKDOWN]**/
         Class = function(/* var args here */) {
-            var args = slice(arguments), argslen = args.length, _class = null;
+            var args = arguments, argslen = args.length, _class = null;
             
             if ( 2 <= argslen )
             {
@@ -728,12 +735,13 @@
                         _extends.extends || Obj, 
                         Merge(_protomix, _proto), 
                         _extends.namespace || null,
-                        _extends.as || null
+                        _extends.as || null,
+                        _qualifier.NFE || null
                     );
                 }
                 else
                 {
-                    _class = Extends(_extends, Merge(_protomix, _proto));
+                    _class = Extends(_extends, Merge(_protomix, _proto), null, null, _qualifier.NFE || null);
                 }
             }
             

@@ -1,88 +1,88 @@
-var Class = require('../build/classy.js').Class;
+var Class = require('../build/classy.js').Class, l = console.log;
 
 var C1 = Class({
     f1: function( ) {
-        console.log('+ C1 f1');
+        l('+ C1 f1');
         var r = this.f2( );
-        console.log('- C1 f1');
+        l('- C1 f1');
         return r;
     },
     f2: function( ) {
-        console.log('+ C1 f2');
+        l('+ C1 f2');
         var r = this.f3( );
-        console.log('- C1 f2');
+        l('- C1 f2');
         return r;
     },
     f3: function( ) {
-        console.log('+ C1 f3');
+        l('+ C1 f3');
         var r = 0;
-        console.log('- C1 f3');
+        l('- C1 f3');
         return r;
     }
 });
 
-var C2 = Class(C1, {
+var C2 = Class({extends:C1, NFE:{methods:['f1', 'f2', 'f3'], scope:{l:l}}}, {
     f1: function( ) {
-        console.log('+ C2 f1');
+        l('+ C2 f1');
         var r = $method.$super.call(this)+2;
-        console.log('- C2 f1');
+        l('- C2 f1');
         return r;
     },
     f2: function( ) {
-        console.log('+ C2 f2');
+        l('+ C2 f2');
         var r = $method.$super.call(this)+2;
-        console.log('- C2 f2');
+        l('- C2 f2');
         return r;
     },
     f3: function( ) {
-        console.log('+ C2 f3');
+        l('+ C2 f3');
         var r = $method.$super.call(this)+2;
-        console.log('- C2 f3');
+        l('- C2 f3');
         return r;
     }
 });
 
-var C3 = Class(C2, {
+var C3 = Class({extends:C2, NFE:{methods:['f1', 'f2', 'f3'], scope:{l:l}}}, {
     f1: function( ) {
-        console.log('+ C3 f1');
+        l('+ C3 f1');
         var r = $method.$super.call(this)+3;
-        console.log('- C3 f1');
+        l('- C3 f1');
         return r;
     },
     f2: function( ) {
-        console.log('+ C3 f2');
+        l('+ C3 f2');
         var r = $method.$super.call(this)+3;
-        console.log('- C3 f2');
+        l('- C3 f2');
         return r;
     },
     f3: function( ) {
-        console.log('+ C3 f3');
+        l('+ C3 f3');
         var r = $method.$super.call(this)+3;
-        console.log('- C3 f3');
+        l('- C3 f3');
         return r;
     }
 });
 
-var C4 = Class(C3, {
+var C4 = Class({extends:C3, NFE:{methods:['f1', 'f2', 'f3'], scope:{l:l}}}, {
     f1: function( ) {
-        console.log('+ C4 f1');
+        l('+ C4 f1');
         var r = $method.$super.call(this)+4;
-        console.log('- C4 f1');
+        l('- C4 f1');
         return r;
     },
     f2: function( ) {
-        console.log('+ C4 f2');
+        l('+ C4 f2');
         var r = $method.$super.call(this)+4;
-        console.log('- C4 f2');
+        l('- C4 f2');
         return r;
     },
     f3: function( ) {
-        console.log('+ C4 f3');
+        l('+ C4 f3');
         var r = $method.$super.call(this)+4;
-        console.log('- C4 f3');
+        l('- C4 f3');
         return r;
     }
 });
 
 var c = new C4();
-console.log('Result = ' + c.f1());
+l('Result = ' + c.f1());
