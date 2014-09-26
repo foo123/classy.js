@@ -17,10 +17,31 @@ __Example:__    [API Reference](/api-reference.md)
     
     var aParent = Class({ /* extends Object by default */
         
-    // static properties/methods (are inherited by subclasses)
-    __static__: { 
-        aStaticProp: 1 
+    // private methods ONLY (NOT extendable)
+    __private__: {
+        aPrivateMethod: function(msg) { 
+            console.log(msg); 
+        }
     },
+    
+    // alternative way to define private methods ONLY (NOT extendable)
+    aPrivateMethod2: Classy.Method(function(msg) { 
+        // access other private methods as well
+        $private.aPrivateMethod( msg );
+    }, Classy.PRIVATE),
+    
+    // extendable static props/methods (are inherited by subclasses)
+    __static__: {
+        aStaticProp: 2,
+        aStaticMethod: function(msg) { 
+            console.log(msg); 
+        }
+    },
+    
+    // alternative way to define static methods/props (extendable)
+    aStaticMethod2: Classy.Method(function(msg) { 
+        console.log(msg); 
+    }, Classy.STATIC),
     
     constructor: function(a, b) {
             this.a = a;
@@ -30,9 +51,11 @@ __Example:__    [API Reference](/api-reference.md)
         a: null,
         b: null,
         
-        add: function() {
+        // a method, wrap in Classy.Method to have direct access to $super, $private etc.., references
+        add: Classy.Method(function( ) {
+            $private.aPrivateMethod2( 'Adding' );
             return this.a + this.b;
-        }
+        })
     });
 
     var aChild = Class( { Extends: aParent }, {
@@ -44,7 +67,7 @@ __Example:__    [API Reference](/api-reference.md)
             //this.$superv('constructor', [a, b]);
         },
         
-        sayHi: function() {
+        sayHi: function( ) {
             return 'Hi';
         }
     });
@@ -198,7 +221,9 @@ The relevant jsperf tests (for Classy 0.7.6) are [here](http://jsperf.com/fun-wi
 
 **UPDATE**
 
-Finally, made a way to have NFE-style (named-function invocation) super calls in classy.js (v. 0.8), in a generic way (ok, with a little configuration per class, if-and-only-if needed), see examples and tests under test/ folder.
+Finally, made a way to have NFE-style (named-function expression) super calls in classy.js (v. 0.8), in a generic way (ok, with a little configuration per class, if-and-only-if needed), see examples and tests under test/ folder. 
+
+**NOTE** In classy 0.8.2+, a new method *Classy.Method* can be used to wrap methods and their extra lexical scopes (if any) in order to access $super/$private etc.. references directly inside the methods (see updated examples and tests under /test folder).
 
 The relevant jsperf tests are [here](http://jsperf.com/fun-with-method-overrides-3/7)
 

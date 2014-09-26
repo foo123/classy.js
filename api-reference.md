@@ -42,6 +42,49 @@ Useful when implementing multiple interfaces which might share same method names
         
 
 
+__Method__: *Method*
+
+```javascript
+aMethod = Classy.Method(Function method [, FLAG qualifier=Classy.PUBLIC] [, Object scope=null]);
+```
+
+Return a *method* accessed as qualifier (PUBLIC/STATIC/PRIVATE) with optional "scoped" lexical variable context, 
+to be used as a method function in a class definition,
+where direct contextual information (e.g faster "$super" reference) can be added transparently
+
+example:
+```javascript
+aClass = Classy.Class(anotherClass, {
+    
+    constructor: Classy.Method(function( a, b ) { 
+       $super.constructor.call(this, a, b);
+       // ...
+    }),
+    // this enables Classy to scope a method correctly (if needed), 
+    // so as to add direct $super context reference (faster) or other contextual information
+    // (optional) scope includes any variables used inside the method that belong to its lexical scope
+    // so the method can be reproduced correctly
+    aMethod: Classy.Method(function( ) {
+        // ...
+        // direct $super reference used here, 
+        // Classy will add the necessary reference transparently
+        $super.aMethod.call(this);
+
+        // aVar1, avar2 are variables NOT defined inside the method, 
+        // but part of its lexical (closure) scope
+        aVar1 = aVar2 + 1;
+    }, Classy.PUBLIC, {aVar1:aVar1, aVar2:aVar2}),
+
+    // accessible as "aClass.aStaticMethod" (extendable)
+    aStaticMethod: Classy.Method(function( ){ 
+         // ...
+    }, Classy.STATIC )
+});
+```
+
+        
+
+
 __Method__: *Extends*
 
 ```javascript
@@ -72,6 +115,8 @@ __Method__: *Class*
 ```javascript
 aClass = Classy.Class( );
 // or
+aStaticClass = Classy.Class( Classy.STATIC, Object staticdefs={} );
+// or
 aClass = Classy.Class(Object proto);
 // or
 aClass = Classy.Class(Function superClass, Object proto);
@@ -91,11 +136,23 @@ var aChild = Classy.Class(
 { Extends: aParent, Implements: [EventEmitter, Runnable] }, 
 {
     
+    // private methods ONLY (NOT extendable)
+    __private__: {
+      aPrivateMethod: function(msg) { console.log(msg); }
+    },
+    // alternative way to define private methods ONLY (NOT extendable)
+    aPrivateMethod2: Classy.Method(function(msg) { 
+        // access other private methods as well
+        $private.aPrivateMethod( msg );
+    }, Classy.PRIVATE),
+    
     // extendable static props/methods (are inherited by subclasses)
     __static__: {
       aStaticProp: 2,
       aStaticMethod: function(msg) { console.log(msg); }
     },
+    // alternative way to define static methods/props (extendable)
+    aStaticMethod2: Classy.Method(function(msg) { console.log(msg); }, Classy.STATIC),
     
     // class constructor
     constructor: function(a, b) {
@@ -105,10 +162,14 @@ var aChild = Classy.Class(
         //this.$superv('constructor', [a, b]);
     },
     
-    // class method
-    sayHi: function() {
+    // class method (wrap around a Classy.Method to have access to $private and $super direct references)
+    sayHi: Classy.Method(function( ){
+        // call a private method here
+        $private.aPrivateMethod.call(this, 'Hi');
+        $private.aPrivateMethod2('Hi2');
+        $super.sayHi.call(this, 'Hi3');
         return 'Hi';
-    }
+    })
 }
 );
 ```

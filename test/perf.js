@@ -56,6 +56,7 @@
     classy073.Class3 = Classy073.Class(classy073.Class2, {
         depth: function( ) { return this.$super('depth')+1; }
     });
+    
     classy.Class1 = Classy.Class({
         constructor: function( ){  },
         _start:0,
@@ -67,23 +68,33 @@
     classy.Class3Super = Classy.Class(classy.Class2Super, {
         depth: function( ) { return this.$super('depth')+1; }
     });
+    
     classy.Class2SuperVector = Classy.Class(classy.Class1, {
         depth: function( ) { return this.$superv('depth')+1; }
     });
     classy.Class3SuperVector = Classy.Class(classy.Class2SuperVector, {
         depth: function( ) { return this.$superv('depth')+1; }
     });
-    classy.Class2SuperNFE = Classy.Class({extends:classy.Class1, scoped:{methods:['depth'], scope:null}}, {
-        depth: function( ) { return $method.$super.call(this)+1; }
+    
+    classy.Class2SuperNFE = Classy.Class(classy.Class1, {
+        depth: Classy.Method(function( ) { return $method.$super.call(this)+1; })
     });
-    classy.Class3SuperNFE = Classy.Class({extends:classy.Class2SuperNFE, scoped:{methods:['depth'], scope:null}}, {
-        depth: function( ) { return $method.$super.call(this)+1; }
+    classy.Class3SuperNFE = Classy.Class(classy.Class2SuperNFE, {
+        depth: Classy.Method(function( ) { return $method.$super.call(this)+1; })
     });
-    classy.Class2SuperScoped = Classy.Class({extends:classy.Class1, scoped:{methods:['depth'], scope:null}}, {
-        depth: function( ) { return $super.depth.call(this)+1; }
+    
+    classy.Class2SuperScoped = Classy.Class(classy.Class1, {
+        depth: Classy.Method(function( ) { return $super.depth.call(this)+1; })
     });
-    classy.Class3SuperScoped = Classy.Class({extends:classy.Class2SuperScoped, scoped:{methods:['depth'], scope:null}}, {
-        depth: function( ) { return $super.depth.call(this)+1; }
+    classy.Class3SuperScoped = Classy.Class(classy.Class2SuperScoped, {
+        depth: Classy.Method(function( ) { return $super.depth.call(this)+1; })
+    });
+    
+    classy.Class2SuperScopedClassic = Classy.Class(classy.Class1, {
+        depth: Classy.Method(function( ) { return _super.call(this)+1; })
+    });
+    classy.Class3SuperScopedClassic = Classy.Class(classy.Class2SuperScopedClassic, {
+        depth: Classy.Method(function( ) { return _super.call(this)+1; })
     });
     
     var vanilla = new vanillaStyle.Class3( );
@@ -93,37 +104,41 @@
     var clSuperVector = new classy.Class3SuperVector( );
     var clSuperNFE = new classy.Class3SuperNFE( );
     var clSuperScoped = new classy.Class3SuperScoped( );
+    var clSuperScopedClassic = new classy.Class3SuperScopedClassic( );
 
     loader.style.display = "inline-block";
     new Benchmark.Suite( )
         // add tests
-        .add('Closure (Resig)', function() {
+        .add('Closure (Resig)', function( ){
             closure.depth( );
         })
-        .add('Classy073 $super, this.$super("method")', function() {
+        .add('Classy073 $super, this.$super("method")', function( ){
             cl073.depth( );
         })
-        .add('Classy Super, this.$super("method")', function() {
+        .add('Classy Super, this.$super("method")', function( ){
             clSuper.depth( );
         })
-        .add('Classy SuperVector, this.$superv("method")', function() {
+        .add('Classy SuperVector, this.$superv("method")', function( ){
             clSuperVector.depth( );
         })
-        .add('Classy SuperNFE, $method.$super.call(this)', function() {
+        .add('Classy SuperNFE, $method.$super.call(this)', function( ){
             clSuperNFE.depth( );
         })
-        .add('Classy SuperScoped, $super.method.call(this)', function() {
+        .add('Classy SuperScoped, $super.method.call(this)', function( ){
             clSuperScoped.depth( );
         })
-        .add('Vanilla OOP, base', function() {
+        .add('Classy SuperScopedClassic, _super.call(this)', function( ){
+            clSuperScopedClassic.depth( );
+        })
+        .add('Vanilla OOP, base', function( ){
             vanilla.depth( );
         })
         // add listeners
-        .on('cycle', function(event) {
+        .on('cycle', function(event){
             buff += String(event.target) + "\n\n";
             //console.log(String(event.target));
         })
-        .on('complete', function() {
+        .on('complete', function( ){
             buff += 'Fastest is ' + this.filter('fastest').pluck('name') + "\n\n";
             loader.style.display = "none";
             output.innerHTML = buff;

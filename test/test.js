@@ -62,7 +62,12 @@
           aStaticProp: 2,
           aStaticMethod: function(msg) { return ('Static '+msg); }
         },
-    
+        
+        // extendable static props/methods (are inherited by subclasses)
+        aStaticMethod2: Classy.Method(function(msg) { 
+            return ('Static2 '+msg); 
+        }, Classy.STATIC),
+        
         constructor: function(a, b) {
             this.a = a;
             this.b = b;
@@ -71,7 +76,7 @@
         a: 0,
         b: 0,
         
-        add: function() {
+        add: function( ) {
             return this.a + this.b;
         },
         
@@ -91,6 +96,10 @@
             this.$super('constructor', a, b);
         },
         
+        privMethod: Classy.Method(function(msg){
+            return 'Private ' + msg;
+        }, Classy.PRIVATE),
+        
         parentAdd: function() {
             return this.$super('add');
         },
@@ -99,9 +108,9 @@
             return this.$super('add');
         },
         
-        sayHi: function() {
-            return 'child parent: ' + this.$super('sayHi') + ', child: aChild says Hi';
-        }
+        sayHi: Classy.Method(function( ){
+            return 'child parent: ' + this.$super('sayHi') + ', child: aChild says Hi, ' + $private.privMethod.call(this, 'Hi');
+        })
     });
     
     var aParentInst = new aParent(1, 2);
@@ -134,6 +143,10 @@
     echo(aChildInst.$class.aStaticMethod('aChildInst'));
     echo(aParent.aStaticMethod('aParent'));
     echo(aChild.aStaticMethod('aChild'));
+    echo(aParentInst.$class.aStaticMethod2('aParentInst'));
+    echo(aChildInst.$class.aStaticMethod2('aChildInst'));
+    echo(aParent.aStaticMethod2('aParent'));
+    echo(aChild.aStaticMethod2('aChild'));
     
     echo('Testing Static keys inheritance:');
     echo('** the following should be same **');
@@ -164,6 +177,9 @@
     echo('interface$method2 in aChildInst                   : ' + assert('interface$method2' in aChildInst));
     echo('interface$method1 in aChildInst                   : ' + assert('interface$method1' in aChildInst));
     echo('interface$method3 in aChildInst                   : ' + assert('interface$method3' in aChildInst));
+    echo('__private__ in aChildInst (using in)              : ' + assert('__private__' in aChildInst));
+    echo('__private__ in aChildInst                         : ' + assert(aChildInst.propertyIsEnumerable('__private__')));
+    echo('privMethod in aChildInst                          : ' + assert(aChildInst.propertyIsEnumerable('privMethod')));
     echo();
     
     // the following should be all true

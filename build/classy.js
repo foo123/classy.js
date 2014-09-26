@@ -1,7 +1,7 @@
 /**
 *
 *   Classy.js
-*   @version: 0.8.1
+*   @version: 0.8.2
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -36,7 +36,7 @@
 /**
 *
 *   Classy.js
-*   @version: 0.8.1
+*   @version: 0.8.2
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -53,8 +53,9 @@
     [/DOC_MARKDOWN]**/
     
     var CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO__ = "__proto__", 
-        __STATIC__ = "__static__", /*__PRIVATE__ = "__private__", PRIVATE = "$private",*/
+        __STATIC__ = "__static__", __PRIVATE__ = "__private__", PRIVATE = "$private",
         SUPER = "$super", STATIC = "$static", CLASS = "$class",
+        /*METHOD = 1,*/ PUBLIC_PROP = 2, PRIVATE_PROP = 4, STATIC_PROP = 8,
         Obj = Object, OP = Obj[PROTO], Func = Function, FP = Func[PROTO], 
         Str = String, Num = Number, Regex = RegExp, Arr = Array, 
         toStr = FP.call.bind(OP.toString), stringifyFunc = FP.call.bind(FP.toString),
@@ -242,10 +243,14 @@
         
         // $super.method.call(this, a, b);
         // $method.$super.call(this, a, b);
-        $SCOPED = function( name, method, superClass, scope ) {
-            (scope=scope||{})[SUPER] = superClass;
+        // _super.call(this, a, b);
+        $SCOPED = function( name, method, superClass, privateMethods, scope ) {
+            scope = scope || {};
+            scope[SUPER] = superClass;
+            scope[PRIVATE] = privateMethods;
+            scope['_super'] = superClass[name] || function( ){ };
             var newMethod = createScopedFunc("var $method="+stringifyFunc( method )+"; return $method;", scope);
-            newMethod[SUPER] = superClass[name] || function( ){ };
+            newMethod[SUPER] = scope['_super'];
             return newMethod;
         },
         
@@ -358,6 +363,56 @@
         },
         
         /**[DOC_MARKDOWN]
+        * __Method__: *Method*
+        *
+        * ```javascript
+        * aMethod = Classy.Method(Function method [, FLAG qualifier=Classy.PUBLIC] [, Object scope=null]);
+        * ```
+        *
+        * Return a *method* accessed as qualifier (PUBLIC/STATIC/PRIVATE) with optional "scoped" lexical variable context, 
+        * to be used as a method function in a class definition,
+        * where direct contextual information (e.g faster "$super" reference) can be added transparently
+        *
+        * example:
+        * ```javascript
+        * aClass = Classy.Class(anotherClass, {
+        *     
+        *     constructor: Classy.Method(function( a, b ) { 
+        *        $super.constructor.call(this, a, b);
+        *        // ...
+        *     }),
+        *     // this enables Classy to scope a method correctly (if needed), 
+        *     // so as to add direct $super context reference (faster) or other contextual information
+        *     // (optional) scope includes any variables used inside the method that belong to its lexical scope
+        *     // so the method can be reproduced correctly
+        *     aMethod: Classy.Method(function( ) {
+        *         // ...
+        *         // direct $super reference used here, 
+        *         // Classy will add the necessary reference transparently
+        *         $super.aMethod.call(this);
+        *
+        *         // aVar1, avar2 are variables NOT defined inside the method, 
+        *         // but part of its lexical (closure) scope
+        *         aVar1 = aVar2 + 1;
+        *     }, Classy.PUBLIC, {aVar1:aVar1, aVar2:aVar2}),
+        *
+        *     // accessible as "aClass.aStaticMethod" (extendable)
+        *     aStaticMethod: Classy.Method(function( ){ 
+        *          // ...
+        *     }, Classy.STATIC )
+        * });
+        * ```
+        *
+        [/DOC_MARKDOWN]**/
+        Method = function( method, qualifier, scope ) {
+            if ( !(this instanceof Method) ) return new Method( method, qualifier, scope );
+            this.method = method;
+            this.qualifier = (T_NUM === get_type(qualifier) ? qualifier : 0) | PUBLIC_PROP;
+            this.scope = T_OBJ === get_type(scope) ? scope : null;
+        },
+        
+        
+        /**[DOC_MARKDOWN]
         * __Method__: *Extends*
         *
         * ```javascript
@@ -374,12 +429,13 @@
         // http://dmitrysoshnikov.com/ecmascript/javascript-the-core/
         // http://stackoverflow.com/questions/16063394/prototypical-inheritance-writing-up/16063711#16063711
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty/Additional_examples
-        Extends = function( superClass, subClassProto, namespace, aliases, scoped_super ) {
+        Extends = function( superClass, subClassProto, namespace, aliases ) {
             superClass = superClass || Obj;
             subClassProto = subClassProto || {};
-            var $static = superClass[STATIC] || null, 
+            var $static = superClass[STATIC] || null,
                 superClassProto = superClass[PROTO], 
-                C, __static__ = null, 
+                C, __static__ = null, currect$static = null,
+                __private__ = { },
                 i, l, prop, key, val, T, mname, method
             ;
             
@@ -388,6 +444,12 @@
             
             C = subClassProto[CONSTRUCTOR];
             
+            if ( hasProperty(subClassProto, __PRIVATE__) )
+            {
+                __private__ = subClassProto[__PRIVATE__] || { };
+                delete subClassProto[__PRIVATE__];
+            }
+            
             if ( hasProperty(subClassProto, __STATIC__) )
             {
                 // $static / __static__ props/methods and associated keys
@@ -395,24 +457,69 @@
                 __static__ = subClassProto[__STATIC__];
                 // $static = props/methods keys
                 // store "static keys" for enabling subclass inheritance/extension if needed
-                $static = mergeUnique( $static || [], Keys( __static__ ) );
+                currect$static = Keys( __static__ );
                 delete subClassProto[__STATIC__];
             }
             
-            // add $SUPER_SCOPED (NFE) functionality as well
-            if ( scoped_super && scoped_super.methods && scoped_super.methods.length )
+            // add $SCOPED/Method functionality as well
+            for (mname in subClassProto)
             {
-                for (i=0; i<scoped_super.methods.length; i++)
+                method = subClassProto[ mname ];
+                if ( method instanceof Method )
                 {
-                    mname = scoped_super.methods[ i ];
-                    if ( T_FUNC === get_type((method = subClassProto[mname])) )
+                    if ( STATIC_PROP & method.qualifier )
                     {
-                        subClassProto[mname] = $SCOPED(
-                            mname, method, 
-                            superClassProto, 
-                            scoped_super.scope
-                        );
+                        (__static__=__static__||{})[ mname ] = method.method;
+                        (currect$static=currect$static||[]).push( mname );
+                        delete subClassProto[mname];
                     }
+                    else if ( T_FUNC === get_type(method.method) )
+                    {
+                        if ( PRIVATE_PROP & method.qualifier )
+                        {
+                            __private__[ mname ] = method;
+                            delete subClassProto[mname];
+                        }
+                        else
+                        {
+                            subClassProto[mname] = $SCOPED(
+                                mname, method.method, 
+                                superClassProto, 
+                                __private__,
+                                method.scope
+                            );
+                        }
+                    }
+                    else
+                    {
+                        subClassProto[mname] = method.method;
+                    }
+                }
+            }
+            for (mname in __private__)
+            {
+                method = __private__[ mname ];
+                if ( method instanceof Method )
+                {
+                    __private__[mname] = $SCOPED(
+                        mname, method.method, 
+                        superClassProto, 
+                        __private__,
+                        method.scope
+                    );
+                }
+                else if ( T_FUNC === get_type(method) )
+                {
+                    __private__[mname] = $SCOPED(
+                        mname, method, 
+                        superClassProto, 
+                        __private__,
+                        { }
+                    );
+                }
+                else
+                {
+                    delete __private__[mname];
                 }
             }
             
@@ -441,26 +548,13 @@
             defineProperties( C[PROTO], prop );
             
             prop = { };
-            prop[STATIC] = {
-                value: $static,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            };
-            prop[SUPER] = {
-                value: superClass,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            };
-            defineProperties( C, prop );
-            
-            if ( $static )
+            if ( $static || currect$static )
             {
+                $static = mergeUnique( $static || [], currect$static || [] );
                 // add inlne static props/methods
                 //C = Merge( C, $static );
                 l = $static.length;
-                prop = {};
+                //prop = {};
                 for (i=0; i<l; i++)
                 {
                     key = $static[ i ];
@@ -489,9 +583,21 @@
                         configurable: true
                     };
                 }
-                // define (extendable) static props/methods
-                defineProperties( C, prop );
             }
+            prop[STATIC] = {
+                value: $static,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            };
+            prop[SUPER] = {
+                value: superClass,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            };
+            // define class info and (extendable) static props/methods
+            defineProperties( C, prop );
 
             return C;
         },
@@ -516,6 +622,8 @@
         * ```javascript
         * aClass = Classy.Class( );
         * // or
+        * aStaticClass = Classy.Class( Classy.STATIC, Object staticdefs={} );
+        * // or
         * aClass = Classy.Class(Object proto);
         * // or
         * aClass = Classy.Class(Function superClass, Object proto);
@@ -535,11 +643,23 @@
         * { Extends: aParent, Implements: [EventEmitter, Runnable] }, 
         * {
         *     
+        *     // private methods ONLY (NOT extendable)
+        *     __private__: {
+        *       aPrivateMethod: function(msg) { console.log(msg); }
+        *     },
+        *     // alternative way to define private methods ONLY (NOT extendable)
+        *     aPrivateMethod2: Classy.Method(function(msg) { 
+        *         // access other private methods as well
+        *         $private.aPrivateMethod( msg );
+        *     }, Classy.PRIVATE),
+        *     
         *     // extendable static props/methods (are inherited by subclasses)
         *     __static__: {
         *       aStaticProp: 2,
         *       aStaticMethod: function(msg) { console.log(msg); }
         *     },
+        *     // alternative way to define static methods/props (extendable)
+        *     aStaticMethod2: Classy.Method(function(msg) { console.log(msg); }, Classy.STATIC),
         *     
         *     // class constructor
         *     constructor: function(a, b) {
@@ -549,10 +669,14 @@
         *         //this.$superv('constructor', [a, b]);
         *     },
         *     
-        *     // class method
-        *     sayHi: function() {
+        *     // class method (wrap around a Classy.Method to have access to $private and $super direct references)
+        *     sayHi: Classy.Method(function( ){
+        *         // call a private method here
+        *         $private.aPrivateMethod.call(this, 'Hi');
+        *         $private.aPrivateMethod2('Hi2');
+        *         $super.sayHi.call(this, 'Hi3');
         *         return 'Hi';
-        *     }
+        *     })
         * }
         * );
         * ```
@@ -664,6 +788,9 @@
         Class = function(/* var args here */) {
             var args = arguments, argslen = args.length, _class = null;
             
+            // "static class" definition, vanilla, return the defs
+            if ( STATIC_PROP === args[0] ) return args[1] || { };
+            
             if ( 2 <= argslen )
             {
                 var _qualifier = get_type( args[0] );
@@ -743,13 +870,12 @@
                         _extends.extends || Obj, 
                         Merge(_protomix, _proto), 
                         _extends.namespace || null,
-                        _extends.as || null,
-                        _qualifier.scoped || null
+                        _extends.as || null
                     );
                 }
                 else
                 {
-                    _class = Extends(_extends, Merge(_protomix, _proto), null, null, _qualifier.scoped || null);
+                    _class = Extends(_extends, Merge(_protomix, _proto));
                 }
             }
             
@@ -765,7 +891,9 @@
     // export it
     exports['Classy'] = {
         
-        VERSION: "0.8.1",
+        VERSION: "0.8.2",
+        
+        PUBLIC: PUBLIC_PROP, STATIC: STATIC_PROP, PRIVATE: PRIVATE_PROP,
         
         Type: get_type,
         
@@ -775,14 +903,11 @@
         
         Alias: Alias,
         
-        Implements: Implements,
-        
-        Mixin: Mixin,
+        Implements: Implements, Mixin: Mixin,
         
         Extends: Extends,
         
-        // vanilla method for strictly static (objects) classes
-        Static: function( defs ) { return defs; },
+        Method: Method,
         
         // main method
         Class: Class

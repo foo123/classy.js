@@ -1,6 +1,6 @@
-var Class = require('../build/classy.js').Class, l = console.log;
+var Classy = require('../build/classy.js'), l = console.log;
 
-var C1 = Class({
+var C1 = Classy.Class({
     f1: function( ) {
         l('+ C1 f1');
         var r = this.f2( );
@@ -21,7 +21,7 @@ var C1 = Class({
     }
 });
 
-var C2 = Class(C1, {
+var C2 = Classy.Class(C1, {
     f1: function( ) {
         l('+ C2 f1');
         var r = this.$super('f1')+2;
@@ -42,7 +42,7 @@ var C2 = Class(C1, {
     }
 });
 
-var C3 = Class(C2, {
+var C3 = Classy.Class(C2, {
     f1: function( ) {
         l('+ C3 f1');
         var r = this.$super('f1')+3;
@@ -63,7 +63,7 @@ var C3 = Class(C2, {
     }
 });
 
-var C4 = Class(C3, {
+var C4 = Classy.Class(C3, {
     f1: function( ) {
         l('+ C4 f1');
         var r = this.$super('f1')+4;
