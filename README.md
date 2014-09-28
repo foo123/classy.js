@@ -223,7 +223,7 @@ The relevant jsperf tests (for Classy 0.7.6) are [here](http://jsperf.com/fun-wi
 
 Finally, made a way to have NFE-style (named-function expression) super calls in classy.js (v. 0.8), in a generic way (ok, with a little configuration per class, if-and-only-if needed), see examples and tests under test/ folder. 
 
-**NOTE** In classy 0.8.2+, a new method *Classy.Method* can be used to wrap methods and their extra lexical scopes (if any) in order to access $super/$private etc.. references directly inside the methods (see updated examples and tests under /test folder).
+**NOTE** In classy 0.8.2+, a new method *Classy.Method* can be used to wrap methods and their extra lexical scopes (if any) in order to access $super/$private etc.. references directly inside the methods (see updated examples and tests under /test folder and updated [jsperf test for Classy 0.8.2](http://jsperf.com/fun-with-method-overrides-3/8)).
 
 The relevant jsperf tests are [here](http://jsperf.com/fun-with-method-overrides-3/7)
 

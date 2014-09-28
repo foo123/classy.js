@@ -193,12 +193,13 @@
         
         // this.$superv('method', [a, b]);
         // this.$super('method', a, b);
+        dummySuper = function(){},
         $SUPER = function( superClass, vectorSuper ) {
             // return the function to handle the super call, handling possible recursion if needed
             var _super_super, called = null;
             if ( vectorSuper )
             {
-                _super_super = superClass[SUPER+'v'] || function( ){ };
+                _super_super = superClass[SUPER+'v'] || dummySuper;
                 return function( method, args ) { 
                     var r, m;
                     if ( called === method )
@@ -218,7 +219,7 @@
             }
             else
             {
-                _super_super = superClass[SUPER] || function( ){ };
+                _super_super = superClass[SUPER] || dummySuper;
                 /*, var args here.. */
                 /* use up to 10 arguments for speed, use $superv for arbitrary arguments */
                 return function( method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9 ) { 
@@ -244,11 +245,12 @@
         // $super.method.call(this, a, b);
         // $method.$super.call(this, a, b);
         // _super.call(this, a, b);
-        $SCOPED = function( name, method, superClass, privateMethods, scope ) {
+        $SCOPED = function( name, method, currentClass, superClass, privateMethods, scope ) {
             scope = scope || {};
             scope[SUPER] = superClass;
+            scope[CLASS] = currentClass;
             scope[PRIVATE] = privateMethods;
-            scope['_super'] = superClass[name] || function( ){ };
+            scope['_super'] = superClass[name] || dummySuper;
             var newMethod = createScopedFunc("var $method="+stringifyFunc( method )+"; return $method;", scope);
             newMethod[SUPER] = scope['_super'];
             return newMethod;
@@ -435,7 +437,7 @@
             var $static = superClass[STATIC] || null,
                 superClassProto = superClass[PROTO], 
                 C, __static__ = null, currect$static = null,
-                __private__ = { },
+                __private__ = { }, 
                 i, l, prop, key, val, T, mname, method
             ;
             
@@ -484,7 +486,7 @@
                         {
                             subClassProto[mname] = $SCOPED(
                                 mname, method.method, 
-                                superClassProto, 
+                                C, superClassProto, 
                                 __private__,
                                 method.scope
                             );
@@ -495,6 +497,11 @@
                         subClassProto[mname] = method.method;
                     }
                 }
+                else if ( T_FUNC === get_type(subClassProto[mname]) )
+                {
+                    // enable NFE-style super functionality as well
+                    subClassProto[mname][SUPER] = superClassProto[mname] || dummySuper;
+                }
             }
             for (mname in __private__)
             {
@@ -503,7 +510,7 @@
                 {
                     __private__[mname] = $SCOPED(
                         mname, method.method, 
-                        superClassProto, 
+                        C, superClassProto, 
                         __private__,
                         method.scope
                     );
@@ -512,7 +519,7 @@
                 {
                     __private__[mname] = $SCOPED(
                         mname, method, 
-                        superClassProto, 
+                        C, superClassProto, 
                         __private__,
                         { }
                     );
