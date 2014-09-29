@@ -189,5 +189,5 @@ Classy.js super calls are faster almost in all browsers and in all cases (i.e. b
 
 The relevant jsperf tests are [here](http://jsperf.com/fun-with-method-overrides-3/9)
 
-[![jsperf-0.9](/test/jsperf-0.8.png)](http://jsperf.com/fun-with-method-overrides-3/9)
+[![jsperf-0.9](/test/jsperf-0.9.png)](http://jsperf.com/fun-with-method-overrides-3/9)
 
