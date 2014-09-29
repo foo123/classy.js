@@ -45,39 +45,36 @@ Useful when implementing multiple interfaces which might share same method names
 __Method__: *Method*
 
 ```javascript
-aMethod = Classy.Method(Function method [, FLAG qualifier=Classy.PUBLIC] [, Object scope=null]);
+aMethod = Classy.Method(Function methodFactory [, FLAG qualifier=Classy.PUBLIC]);
 ```
 
-Return a *method* accessed as qualifier (PUBLIC/STATIC/PRIVATE) with optional "scoped" lexical variable context, 
-to be used as a method function in a class definition,
-where direct contextual information (e.g faster "$super" reference) can be added transparently
+Return a *method* accessed as qualifier (PUBLIC/STATIC/PRIVATE),
+where direct contextual information (e.g faster "$super" reference) can be added transparently (as a closure)
 
 example:
 ```javascript
 aClass = Classy.Class(anotherClass, {
     
-    constructor: Classy.Method(function( a, b ) { 
-       $super.constructor.call(this, a, b);
-       // ...
-    }),
-    // this enables Classy to scope a method correctly (if needed), 
-    // so as to add direct $super context reference (faster) or other contextual information
-    // (optional) scope includes any variables used inside the method that belong to its lexical scope
-    // so the method can be reproduced correctly
-    aMethod: Classy.Method(function( ) {
-        // ...
-        // direct $super reference used here, 
-        // Classy will add the necessary reference transparently
-        $super.aMethod.call(this);
-
-        // aVar1, avar2 are variables NOT defined inside the method, 
-        // but part of its lexical (closure) scope
-        aVar1 = aVar2 + 1;
-    }, Classy.PUBLIC, {aVar1:aVar1, aVar2:aVar2}),
+    // accessible as "this.aMethod"
+    aMethod: Classy.Method(function($super, $private, $class){
+          return function( a, b ) { 
+              // $super is the direct reference to the superclass prototype
+              // $private is the direct reference to the private methods of this class (if any)
+              // $class is the direct reference to this class itself, NOT the prototype (same as this.$class)
+              $super.aMethod.call(this, a, b);
+              // ...
+          }
+    }, Classy.PUBLIC ), // optional method qualifier, default is Classy.PUBLIC
 
     // accessible as "aClass.aStaticMethod" (extendable)
-    aStaticMethod: Classy.Method(function( ){ 
-         // ...
+    aStaticMethod: Classy.Method(function($super, $private, $class){
+          // $super is the direct reference to the superclass itself (NOT the prototype)
+          // $private is the direct reference to the private methods of this class (if any)
+          // $class is the direct reference to this class itself (NOT the prototype)
+          return function( a, b ){ 
+              $super.aStaticMethod(a, b);
+              // ...
+          }
     }, Classy.STATIC )
 });
 ```
@@ -110,12 +107,23 @@ These methods are aliases of **Classy.Merge** method (for now) and perform the s
         
 
 
+__Method__: *Dispose*
+
+```javascript
+Classy.Dispose(Function aClassyClass);
+```
+
+Dispose a Class definition and all references added by Classy.js
+
+        
+
+
 __Method__: *Class*
 
 ```javascript
 aClass = Classy.Class( );
 // or
-aStaticClass = Classy.Class( Classy.STATIC, Object staticdefs={} );
+aStaticClass = Classy.Class(FLAG Classy.STATIC, Object staticdefs={});
 // or
 aClass = Classy.Class(Object proto);
 // or
@@ -141,9 +149,11 @@ var aChild = Classy.Class(
       aPrivateMethod: function(msg) { console.log(msg); }
     },
     // alternative way to define private methods ONLY (NOT extendable)
-    aPrivateMethod2: Classy.Method(function(msg) { 
-        // access other private methods as well
-        $private.aPrivateMethod( msg );
+    aPrivateMethod2: Classy.Method(function($super, $private, $class){
+          return function(msg) { 
+              // access other private methods as well
+              $private.aPrivateMethod( msg );
+          }
     }, Classy.PRIVATE),
     
     // extendable static props/methods (are inherited by subclasses)
@@ -152,23 +162,29 @@ var aChild = Classy.Class(
       aStaticMethod: function(msg) { console.log(msg); }
     },
     // alternative way to define static methods/props (extendable)
-    aStaticMethod2: Classy.Method(function(msg) { console.log(msg); }, Classy.STATIC),
+    aStaticMethod2: Classy.Method(function($super, $private, $class){
+          return function(msg) { 
+              console.log(msg); 
+          }
+    }, Classy.STATIC),
     
     // class constructor
     constructor: function(a, b) {
-        // call super constructor (slower)
+        // call super constructor
         this.$super('constructor', a, b);
-        // call super vector (args) constructor (faster)
+        // call super vector (args) constructor
         //this.$superv('constructor', [a, b]);
     },
     
-    // class method (wrap around a Classy.Method to have access to $private and $super direct references)
-    sayHi: Classy.Method(function( ){
-        // call a private method here
-        $private.aPrivateMethod.call(this, 'Hi');
-        $private.aPrivateMethod2('Hi2');
-        $super.sayHi.call(this, 'Hi3');
-        return 'Hi';
+    // class method factory (wrap around a Classy.Method to have access to $private and $super direct references)
+    sayHi: Classy.Method(function($super, $private, $class){
+          return function( ){
+              // call a private method here
+              $private.aPrivateMethod.call(this, 'Hi');
+              $private.aPrivateMethod2('Hi2');
+              $super.sayHi.call(this, 'Hi3');
+              return 'Hi';
+          }
     })
 }
 );
@@ -181,6 +197,55 @@ aChild.aStaticProp;
 // or, aChildInst is an instance of aChild
 aChildInst.$class.aStaticProp;
 ```
+
+        
+
+
+__Three Ways to make Super Calls__
+
+Classy.js provides three ways to make a super call to the same method of a super class, from inside a method of a subclass (see below):
+
+1. __Using $super/$superv builtin methods:__
+
+```javascript
+  var aSubClass = Classy.Class( aSuperClass, {
+      constructor: function( a, b ) {
+          // minimum hassle, less verbose, more abstract, average performance (depends on application)
+          this.$super("constructor", a, b);
+      }
+  });
+
+```
+
+2. __Using NFE-style super calls (Named-Function Expression):__
+
+```javascript
+  var aSubClass = Classy.Class( aSuperClass, {
+      constructor: function constr( a, b ) {
+          // lot faster performance, less verbose, more hardcoded
+          // Classy will add the $super reference for each method as needed
+          constr.$super.call(this, a, b);
+      }
+  });
+
+```
+
+3. __Using Classy.Method method-factory wrapper:__
+
+```javascript
+  var aSubClass = Classy.Class( aSuperClass, {
+      constructor: Classy.Method(function($super, $private, $class) {
+          return function( a, b ) {
+              // lot faster performance, more verbose, more abstract, 
+              // have direct access to $super/$private/$class references inside the method itself
+              $super.constructor.call(this, a, b);
+          }
+      })
+  });
+
+```
+
+__NOTE__ One can use a mix of these super schemes in any given class, however due to the different way these are implemented and synchronised, the scheme for super calls in the same methods along the class chain should be the same, else the $super calls will not have correct synchronisation resulting in wrong results.
 
         
 

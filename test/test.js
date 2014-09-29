@@ -64,8 +64,10 @@
         },
         
         // extendable static props/methods (are inherited by subclasses)
-        aStaticMethod2: Classy.Method(function(msg) { 
-            return ('Static2 '+msg); 
+        aStaticMethod2: Classy.Method(function($super, $private, $class){
+            return function(msg) { 
+                return ('Static2 '+msg); 
+            }
         }, Classy.STATIC),
         
         constructor: function(a, b) {
@@ -96,8 +98,10 @@
             this.$super('constructor', a, b);
         },
         
-        privMethod: Classy.Method(function(msg){
-            return 'Private ' + msg;
+        privMethod: Classy.Method(function($super, $private, $class){
+            return function(msg){
+                return 'Private ' + msg;
+            }
         }, Classy.PRIVATE),
         
         parentAdd: function() {
@@ -108,8 +112,10 @@
             return this.$super('add');
         },
         
-        sayHi: Classy.Method(function( ){
-            return 'child parent: ' + this.$super('sayHi') + ', child: aChild says Hi, ' + $private.privMethod.call(this, 'Hi');
+        sayHi: Classy.Method(function($super, $private, $class){
+            return function( ){
+                return 'child parent: ' + this.$super('sayHi') + ', child: aChild says Hi, ' + $private.privMethod.call(this, 'Hi');
+            }
         })
     });
     

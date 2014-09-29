@@ -17,19 +17,6 @@ __Example:__    [API Reference](/api-reference.md)
     
     var aParent = Class({ /* extends Object by default */
         
-    // private methods ONLY (NOT extendable)
-    __private__: {
-        aPrivateMethod: function(msg) { 
-            console.log(msg); 
-        }
-    },
-    
-    // alternative way to define private methods ONLY (NOT extendable)
-    aPrivateMethod2: Classy.Method(function(msg) { 
-        // access other private methods as well
-        $private.aPrivateMethod( msg );
-    }, Classy.PRIVATE),
-    
     // extendable static props/methods (are inherited by subclasses)
     __static__: {
         aStaticProp: 2,
@@ -37,11 +24,6 @@ __Example:__    [API Reference](/api-reference.md)
             console.log(msg); 
         }
     },
-    
-    // alternative way to define static methods/props (extendable)
-    aStaticMethod2: Classy.Method(function(msg) { 
-        console.log(msg); 
-    }, Classy.STATIC),
     
     constructor: function(a, b) {
             this.a = a;
@@ -51,19 +33,17 @@ __Example:__    [API Reference](/api-reference.md)
         a: null,
         b: null,
         
-        // a method, wrap in Classy.Method to have direct access to $super, $private etc.., references
-        add: Classy.Method(function( ) {
-            $private.aPrivateMethod2( 'Adding' );
+        add: function( ) {
             return this.a + this.b;
-        })
+        }
     });
 
     var aChild = Class( { Extends: aParent }, {
         
         constructor: function(a, b) {
-            // call super constructor (slower)
+            // call super constructor
             this.$super('constructor', a, b);
-            // call super vector (args) constructor (faster)
+            // call super vector (args) constructor
             //this.$superv('constructor', [a, b]);
         },
         
@@ -96,17 +76,12 @@ var Classy = require('../build/classy');
 Class aParent {
     
     // static method (inherited by subclasses)
-    // method arguments default values supported
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/default_parameters
-    // rest parameters also supported
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions_and_function_scope/rest_parameters
     static aStaticMethod(msg = '', ...rest) { 
         console.log(rest);
         return 'Static Parent ' + msg; 
     }
     
     // static prop (inherited by subclasses)
-    // method arguments default values supported
     static aStaticProp = 1;
     
     // block definition of static properties / methods (inherited by subclasses)
@@ -114,7 +89,6 @@ Class aParent {
         
         aStaticProp2 =  1;
         
-        // method arguments default values supported
         aStaticMethod2(msg = '') { 
             return 'Static '+msg; 
         }
@@ -127,16 +101,11 @@ Class aParent {
     msg;
     
     // class constructor
-    // method arguments default values supported
     constructor ( msg = '', test = null ) {
         this.msg = msg;
     }
     
     // class method
-    // method arguments default values supported
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/default_parameters
-    // rest parameters also supported
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions_and_function_scope/rest_parameters
     sayHi (arg1 = 'arg1', arg2 = 'arg2', ...otherArgs) {
         console.log(arg1);
         console.log(arg2);
@@ -149,32 +118,25 @@ Class aParent {
 // define a Child sub class
 Class aChild extends aParent implements String, RegExp {
     
-    // method arguments default values supported
     static aStaticMethod(msg = '') { 
         return 'Static Child ' + msg; 
     }
     
-    // method arguments default values supported
     constructor (msg='') {
         // call super constructor (js-style)
         super(msg);
-        // call super constructor or other method (PHP-style)
+        // call super constructor or other method (php-style)
         //super.constructor(msg);
         this.msg = 'child says also ' + this.msg;
     }
     
-    // method arguments default values supported
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/default_parameters
-    // rest parameters also supported
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions_and_function_scope/rest_parameters
     sayHi (arg1 = 'arg1', arg2 = 'arg2', ...otherArgs) {
-        // test recursive $super calls
-        // call super method (js-style)
-        //return super();
-        // call super method or other method (PHP-style)
         console.log(arg1);
         console.log(arg2);
         console.log(otherArgs);
+        // call super method (js-style)
+        //return super();
+        // call super method or other method (php-style)
         return super.sayHi(arg1, arg2);
     }
 }
@@ -219,13 +181,13 @@ The relevant jsperf tests (for Classy 0.7.6) are [here](http://jsperf.com/fun-wi
 [![jsperf-0.7.6](/test/jsperf-0.7.6.png)](http://jsperf.com/fun-with-method-overrides-3/6)
 
 
-**UPDATE**
+**UPDATE (0.9)**
 
-Finally, made a way to have NFE-style (named-function expression) super calls in classy.js (v. 0.8), in a generic way (ok, with a little configuration per class, if-and-only-if needed), see examples and tests under test/ folder. 
+Finally, enabled both NFE-style (named-function expression) super calls in classy.js (v. 0.9+), and scoped super calls in a generic way with direct access to class references like $super/$private/$class etc.., using the new *Classy.Method* method factory wrapper, see examples and tests under test/ folder. 
 
-**NOTE** In classy 0.8.2+, a new method *Classy.Method* can be used to wrap methods and their extra lexical scopes (if any) in order to access $super/$private etc.. references directly inside the methods (see updated examples and tests under /test folder and updated [jsperf test for Classy 0.8.2](http://jsperf.com/fun-with-method-overrides-3/8)).
+Classy.js super calls are faster almost in all browsers and in all cases (i.e. builtin $super methods are faster than equivalent closure methods and direct reference $super methods are faster than equivalent methods like NFE).
 
-The relevant jsperf tests are [here](http://jsperf.com/fun-with-method-overrides-3/7)
+The relevant jsperf tests are [here](http://jsperf.com/fun-with-method-overrides-3/9)
 
-[![jsperf-0.8](/test/jsperf-0.8.png)](http://jsperf.com/fun-with-method-overrides-3/7)
+[![jsperf-0.9](/test/jsperf-0.8.png)](http://jsperf.com/fun-with-method-overrides-3/9)
 

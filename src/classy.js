@@ -19,8 +19,8 @@
     
     var CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO__ = "__proto__", 
         __STATIC__ = "__static__", __PRIVATE__ = "__private__", PRIVATE = "$private",
-        SUPER = "$super", STATIC = "$static", CLASS = "$class",
-        /*METHOD = 1,*/ PUBLIC_PROP = 2, PRIVATE_PROP = 4, STATIC_PROP = 8,
+        SUPER = "$super", STATIC = "$static", CLASS = "$class", METHOD = "$method",
+        PUBLIC_PROP = 2, PRIVATE_PROP = 4, STATIC_PROP = 8,
         Obj = Object, OP = Obj[PROTO], Func = Function, FP = Func[PROTO], 
         Str = String, Num = Number, Regex = RegExp, Arr = Array, 
         toStr = FP.call.bind(OP.toString), stringifyFunc = FP.call.bind(FP.toString),
@@ -31,13 +31,6 @@
         is_instance = function(o, t) { return o instanceof t; },
         typeOf = function( v ) { return typeof( v ); },
         type_error = function( msg ) { throw new TypeError( msg ); },
-        
-        // http://stackoverflow.com/a/20473505/3591273
-        createScopedFunc = function( func, scope ) {
-            var k, names = Keys( scope ), vars = [ ];
-            for (k=0; k<names.length; k++) vars.push( scope[ names[k] ] );
-            return new Func( names.join(','), func ).apply( {}, vars );
-        },
         
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperties
@@ -137,7 +130,9 @@
             return obj;
         },
         
-         /**[DOC_MARKDOWN]
+        dummySuper = function( ){ },
+        
+        /**[DOC_MARKDOWN]
         * __Method__: *Create*
         *
         * ```javascript
@@ -154,71 +149,6 @@
             TypeObject[__PROTO__] = proto;
             if ( 'object' === typeOf(properties) ) defineProperties(TypeObject, properties);
             return TypeObject;
-        },
-        
-        // this.$superv('method', [a, b]);
-        // this.$super('method', a, b);
-        dummySuper = function(){},
-        $SUPER = function( superClass, vectorSuper ) {
-            // return the function to handle the super call, handling possible recursion if needed
-            var _super_super, called = null;
-            if ( vectorSuper )
-            {
-                _super_super = superClass[SUPER+'v'] || dummySuper;
-                return function( method, args ) { 
-                    var r, m;
-                    if ( called === method )
-                    {
-                        // no recursion faster instead of recursing on this.$super and walking the prototype
-                        r = _super_super.call(this, method, args);
-                    }
-                    else if ( m=superClass[method] )
-                    {
-                        // .call is faster than .apply
-                        called = method;
-                        r = args && args.length ? m.apply(this, args) : m.call(this);
-                        called = null;
-                    }
-                    return r;
-                }
-            }
-            else
-            {
-                _super_super = superClass[SUPER] || dummySuper;
-                /*, var args here.. */
-                /* use up to 10 arguments for speed, use $superv for arbitrary arguments */
-                return function( method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9 ) { 
-                    var r, m;
-                    if ( called === method )
-                    {
-                        // no recursion faster instead of recursing on this.$super and walking the prototype
-                        r = _super_super.call(this, method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
-                    }
-                    else if ( m=superClass[method] )
-                    {
-                        // http://jsperf.com/argument-slicers
-                        // .call is faster than .apply
-                        called = method;
-                        r = m.call(this, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
-                        called = null;
-                    }
-                    return r;
-                }
-            }
-        },
-        
-        // $super.method.call(this, a, b);
-        // $method.$super.call(this, a, b);
-        // _super.call(this, a, b);
-        $SCOPED = function( name, method, currentClass, superClass, privateMethods, scope ) {
-            scope = scope || {};
-            scope[SUPER] = superClass;
-            scope[CLASS] = currentClass;
-            scope[PRIVATE] = privateMethods;
-            scope['_super'] = superClass[name] || dummySuper;
-            var newMethod = createScopedFunc("var $method="+stringifyFunc( method )+"; return $method;", scope);
-            newMethod[SUPER] = scope['_super'];
-            return newMethod;
         },
         
         /**[DOC_MARKDOWN]
@@ -329,55 +259,106 @@
             return ao;
         },
         
+        // this.$superv('method', [a, b]);
+        // this.$super('method', a, b);
+        $SUPER = function( superClass, vectorSuper ) {
+            // return the function to handle the super call, handling possible recursion if needed
+            var _super_super, called = null;
+            if ( vectorSuper )
+            {
+                _super_super = superClass[SUPER+'v'] || dummySuper;
+                return function( method, args ) { 
+                    var r, m;
+                    if ( called === method )
+                    {
+                        // no recursion faster instead of recursing on this.$super and walking the prototype
+                        r = _super_super.call(this, method, args);
+                    }
+                    else if ( m=superClass[method] )
+                    {
+                        // .call is faster than .apply
+                        called = method;
+                        r = args && args.length ? m.apply(this, args) : m.call(this);
+                        called = null;
+                    }
+                    return r;
+                }
+            }
+            else
+            {
+                _super_super = superClass[SUPER] || dummySuper;
+                /*, var args here.. */
+                /* use up to 10 arguments for speed, use $superv for arbitrary arguments */
+                return function( method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9 ) { 
+                    var r, m;
+                    if ( called === method )
+                    {
+                        // no recursion faster instead of recursing on this.$super and walking the prototype
+                        r = _super_super.call(this, method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
+                    }
+                    else if ( m=superClass[method] )
+                    {
+                        // http://jsperf.com/argument-slicers
+                        // .call is faster than .apply
+                        called = method;
+                        r = m.call(this, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
+                        called = null;
+                    }
+                    return r;
+                }
+            }
+        },
+        
         /**[DOC_MARKDOWN]
         * __Method__: *Method*
         *
         * ```javascript
-        * aMethod = Classy.Method(Function method [, FLAG qualifier=Classy.PUBLIC] [, Object scope=null]);
+        * aMethod = Classy.Method(Function methodFactory [, FLAG qualifier=Classy.PUBLIC]);
         * ```
         *
-        * Return a *method* accessed as qualifier (PUBLIC/STATIC/PRIVATE) with optional "scoped" lexical variable context, 
-        * to be used as a method function in a class definition,
-        * where direct contextual information (e.g faster "$super" reference) can be added transparently
+        * Return a *method* accessed as qualifier (PUBLIC/STATIC/PRIVATE),
+        * where direct contextual information (e.g faster "$super" reference) can be added transparently (as a closure)
         *
         * example:
         * ```javascript
         * aClass = Classy.Class(anotherClass, {
         *     
-        *     constructor: Classy.Method(function( a, b ) { 
-        *        $super.constructor.call(this, a, b);
-        *        // ...
-        *     }),
-        *     // this enables Classy to scope a method correctly (if needed), 
-        *     // so as to add direct $super context reference (faster) or other contextual information
-        *     // (optional) scope includes any variables used inside the method that belong to its lexical scope
-        *     // so the method can be reproduced correctly
-        *     aMethod: Classy.Method(function( ) {
-        *         // ...
-        *         // direct $super reference used here, 
-        *         // Classy will add the necessary reference transparently
-        *         $super.aMethod.call(this);
-        *
-        *         // aVar1, avar2 are variables NOT defined inside the method, 
-        *         // but part of its lexical (closure) scope
-        *         aVar1 = aVar2 + 1;
-        *     }, Classy.PUBLIC, {aVar1:aVar1, aVar2:aVar2}),
+        *     // accessible as "this.aMethod"
+        *     aMethod: Classy.Method(function($super, $private, $class){
+        *           return function( a, b ) { 
+        *               // $super is the direct reference to the superclass prototype
+        *               // $private is the direct reference to the private methods of this class (if any)
+        *               // $class is the direct reference to this class itself, NOT the prototype (same as this.$class)
+        *               $super.aMethod.call(this, a, b);
+        *               // ...
+        *           }
+        *     }, Classy.PUBLIC ), // optional method qualifier, default is Classy.PUBLIC
         *
         *     // accessible as "aClass.aStaticMethod" (extendable)
-        *     aStaticMethod: Classy.Method(function( ){ 
-        *          // ...
+        *     aStaticMethod: Classy.Method(function($super, $private, $class){
+        *           // $super is the direct reference to the superclass itself (NOT the prototype)
+        *           // $private is the direct reference to the private methods of this class (if any)
+        *           // $class is the direct reference to this class itself (NOT the prototype)
+        *           return function( a, b ){ 
+        *               $super.aStaticMethod(a, b);
+        *               // ...
+        *           }
         *     }, Classy.STATIC )
         * });
         * ```
         *
         [/DOC_MARKDOWN]**/
-        Method = function( method, qualifier, scope ) {
-            if ( !(this instanceof Method) ) return new Method( method, qualifier, scope );
-            this.method = method;
+        Method = function( methodFactory, qualifier ) {
+            if ( !(this instanceof Method) ) return new Method( methodFactory, qualifier );
+            this.factory = methodFactory;
             this.qualifier = (T_NUM === get_type(qualifier) ? qualifier : 0) | PUBLIC_PROP;
-            this.scope = T_OBJ === get_type(scope) ? scope : null;
         },
         
+        Prop = function( prop, qualifier ) {
+            if ( !(this instanceof Prop) ) return new Prop( prop, qualifier );
+            this.prop = prop;
+            this.qualifier = (T_NUM === get_type(qualifier) ? qualifier : 0) | PUBLIC_PROP;
+        },
         
         /**[DOC_MARKDOWN]
         * __Method__: *Extends*
@@ -407,7 +388,7 @@
             ;
             
             // fix issue when constructor is missing
-            if ( !hasProperty(subClassProto, CONSTRUCTOR) ) subClassProto[CONSTRUCTOR] = function(){};
+            if ( !hasProperty(subClassProto, CONSTRUCTOR) ) subClassProto[CONSTRUCTOR] = function( ){ };
             
             C = subClassProto[CONSTRUCTOR];
             
@@ -436,36 +417,23 @@
                 {
                     if ( STATIC_PROP & method.qualifier )
                     {
-                        (__static__=__static__||{})[ mname ] = method.method;
+                        (__static__=__static__||{})[ mname ] = method.factory( superClass, __private__, C );
                         (currect$static=currect$static||[]).push( mname );
                         delete subClassProto[mname];
+                        continue;
                     }
-                    else if ( T_FUNC === get_type(method.method) )
+                    else if ( PRIVATE_PROP & method.qualifier )
                     {
-                        if ( PRIVATE_PROP & method.qualifier )
-                        {
-                            __private__[ mname ] = method;
-                            delete subClassProto[mname];
-                        }
-                        else
-                        {
-                            subClassProto[mname] = $SCOPED(
-                                mname, method.method, 
-                                C, superClassProto, 
-                                __private__,
-                                method.scope
-                            );
-                        }
+                        __private__[ mname ] = method;
+                        delete subClassProto[mname];
+                        continue;
                     }
-                    else
-                    {
-                        subClassProto[mname] = method.method;
-                    }
+                    subClassProto[mname] = method.factory( superClassProto, __private__, C );
                 }
-                else if ( T_FUNC === get_type(subClassProto[mname]) )
+                if ( T_FUNC === get_type(method) )
                 {
                     // enable NFE-style super functionality as well
-                    subClassProto[mname][SUPER] = superClassProto[mname] || dummySuper;
+                    method[SUPER] = superClassProto[mname] || dummySuper;
                 }
             }
             for (mname in __private__)
@@ -473,23 +441,9 @@
                 method = __private__[ mname ];
                 if ( method instanceof Method )
                 {
-                    __private__[mname] = $SCOPED(
-                        mname, method.method, 
-                        C, superClassProto, 
-                        __private__,
-                        method.scope
-                    );
+                    method = __private__[mname] = method.factory( superClassProto, __private__, C );
                 }
-                else if ( T_FUNC === get_type(method) )
-                {
-                    __private__[mname] = $SCOPED(
-                        mname, method, 
-                        C, superClassProto, 
-                        __private__,
-                        { }
-                    );
-                }
-                else
+                if ( !(T_FUNC === get_type(method)) )
                 {
                     delete __private__[mname];
                 }
@@ -534,6 +488,9 @@
                     if ( __static__ && undef !== __static__[ key ] )
                     {
                         val = __static__[ key ];
+                        // add direct super reference as well
+                        if ( T_FUNC === get_type(val) )
+                            val[SUPER] = superClass[ key ] || dummySuper;
                     }
                     else if ( undef !== superClass[ key ] )
                     {
@@ -589,12 +546,55 @@
         Implements = Merge, Mixin = Merge,
         
         /**[DOC_MARKDOWN]
+        * __Method__: *Dispose*
+        *
+        * ```javascript
+        * Classy.Dispose(Function aClassyClass);
+        * ```
+        *
+        * Dispose a Class definition and all references added by Classy.js
+        *
+        [/DOC_MARKDOWN]**/
+        Dispose = function( aClass ) {
+            var i, l, o, k;
+            if ( !(T_FUNC === get_type(aClass)) ) return;
+            if ( SUPER in aClass )  aClass[SUPER] = null;
+            if ( CLASS in aClass ) aClass[CLASS] = null;
+            if ( STATIC in aClass )
+            {
+                o = aClass[STATIC];
+                for (i=0,l=o.length; i<l; i++)
+                {
+                    k = o[i];
+                    if ( k in aClass )
+                    {
+                        if ( T_FUNC === get_type(aClass[k]) && aClass[k][SUPER] )
+                            aClass[k][SUPER] = null;
+                        aClass[k] = null;
+                    }
+                }
+                aClass[STATIC] = null;
+            }
+            o = aClass[PROTO];
+            for (k in o)
+            {
+                if ( T_FUNC === get_type(o[k]) )
+                {
+                    if ( o[k][SUPER] ) o[k][SUPER] = null;
+                    o[k] = null;
+                }
+            }
+            o[SUPER] = null;
+            o[SUPER+'v'] = null;
+        },
+        
+        /**[DOC_MARKDOWN]
         * __Method__: *Class*
         *
         * ```javascript
         * aClass = Classy.Class( );
         * // or
-        * aStaticClass = Classy.Class( Classy.STATIC, Object staticdefs={} );
+        * aStaticClass = Classy.Class(FLAG Classy.STATIC, Object staticdefs={});
         * // or
         * aClass = Classy.Class(Object proto);
         * // or
@@ -620,9 +620,11 @@
         *       aPrivateMethod: function(msg) { console.log(msg); }
         *     },
         *     // alternative way to define private methods ONLY (NOT extendable)
-        *     aPrivateMethod2: Classy.Method(function(msg) { 
-        *         // access other private methods as well
-        *         $private.aPrivateMethod( msg );
+        *     aPrivateMethod2: Classy.Method(function($super, $private, $class){
+        *           return function(msg) { 
+        *               // access other private methods as well
+        *               $private.aPrivateMethod( msg );
+        *           }
         *     }, Classy.PRIVATE),
         *     
         *     // extendable static props/methods (are inherited by subclasses)
@@ -631,23 +633,29 @@
         *       aStaticMethod: function(msg) { console.log(msg); }
         *     },
         *     // alternative way to define static methods/props (extendable)
-        *     aStaticMethod2: Classy.Method(function(msg) { console.log(msg); }, Classy.STATIC),
+        *     aStaticMethod2: Classy.Method(function($super, $private, $class){
+        *           return function(msg) { 
+        *               console.log(msg); 
+        *           }
+        *     }, Classy.STATIC),
         *     
         *     // class constructor
         *     constructor: function(a, b) {
-        *         // call super constructor (slower)
+        *         // call super constructor
         *         this.$super('constructor', a, b);
-        *         // call super vector (args) constructor (faster)
+        *         // call super vector (args) constructor
         *         //this.$superv('constructor', [a, b]);
         *     },
         *     
-        *     // class method (wrap around a Classy.Method to have access to $private and $super direct references)
-        *     sayHi: Classy.Method(function( ){
-        *         // call a private method here
-        *         $private.aPrivateMethod.call(this, 'Hi');
-        *         $private.aPrivateMethod2('Hi2');
-        *         $super.sayHi.call(this, 'Hi3');
-        *         return 'Hi';
+        *     // class method factory (wrap around a Classy.Method to have access to $private and $super direct references)
+        *     sayHi: Classy.Method(function($super, $private, $class){
+        *           return function( ){
+        *               // call a private method here
+        *               $private.aPrivateMethod.call(this, 'Hi');
+        *               $private.aPrivateMethod2('Hi2');
+        *               $super.sayHi.call(this, 'Hi3');
+        *               return 'Hi';
+        *           }
         *     })
         * }
         * );
@@ -660,6 +668,54 @@
         * // or, aChildInst is an instance of aChild
         * aChildInst.$class.aStaticProp;
         * ```
+        *
+        [/DOC_MARKDOWN]**/
+        /**[DOC_MARKDOWN]
+        * __Three Ways to make Super Calls__
+        *
+        * Classy.js provides three ways to make a super call to the same method of a super class, from inside a method of a subclass (see below):
+        *
+        * 1. __Using $super/$superv builtin methods:__
+        *
+        * ```javascript
+        *   var aSubClass = Classy.Class( aSuperClass, {
+        *       constructor: function( a, b ) {
+        *           // minimum hassle, less verbose, more abstract, average performance (depends on application)
+        *           this.$super("constructor", a, b);
+        *       }
+        *   });
+        *
+        * ```
+        *
+        * 2. __Using NFE-style super calls (Named-Function Expression):__
+        *
+        * ```javascript
+        *   var aSubClass = Classy.Class( aSuperClass, {
+        *       constructor: function constr( a, b ) {
+        *           // lot faster performance, less verbose, more hardcoded
+        *           // Classy will add the $super reference for each method as needed
+        *           constr.$super.call(this, a, b);
+        *       }
+        *   });
+        *
+        * ```
+        *
+        * 3. __Using Classy.Method method-factory wrapper:__
+        *
+        * ```javascript
+        *   var aSubClass = Classy.Class( aSuperClass, {
+        *       constructor: Classy.Method(function($super, $private, $class) {
+        *           return function( a, b ) {
+        *               // lot faster performance, more verbose, more abstract, 
+        *               // have direct access to $super/$private/$class references inside the method itself
+        *               $super.constructor.call(this, a, b);
+        *           }
+        *       })
+        *   });
+        *
+        * ```
+        *
+        * __NOTE__ One can use a mix of these super schemes in any given class, however due to the different way these are implemented and synchronised, the scheme for super calls in the same methods along the class chain should be the same, else the $super calls will not have correct synchronisation resulting in wrong results.
         *
         [/DOC_MARKDOWN]**/
         /**[DOC_MARKDOWN]
@@ -869,17 +925,13 @@
         
         Type: get_type,
         
-        Create: Create,
-        
-        Merge: Merge,
-        
-        Alias: Alias,
+        Create: Create, Merge: Merge, Alias: Alias,
         
         Implements: Implements, Mixin: Mixin,
         
-        Extends: Extends,
+        Extends: Extends, Dispose: Dispose,
         
-        Method: Method,
+        Method: Method, Prop: Prop,
         
         // main method
         Class: Class

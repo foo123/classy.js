@@ -22,66 +22,66 @@ var C1 = Classy.Class({
 });
 
 var C2 = Classy.Class(C1, {
-    f1: Classy.Method(function( ) {
+    f1: function f1( ) {
         l('+ C2 f1');
-        var r = $method.$super.call(this)+2;
+        var r = f1.$super.call(this)+2;
         l('- C2 f1');
         return r;
-    }, Classy.PUBLIC, {l:l}),
-    f2: Classy.Method(function( ) {
+    },
+    f2: function f2( ) {
         l('+ C2 f2');
-        var r = $method.$super.call(this)+2;
+        var r = f2.$super.call(this)+2;
         l('- C2 f2');
         return r;
-    }, Classy.PUBLIC, {l:l}),
-    f3: Classy.Method(function( ) {
+    },
+    f3: function f3( ) {
         l('+ C2 f3');
-        var r = $method.$super.call(this)+2;
+        var r = f3.$super.call(this)+2;
         l('- C2 f3');
         return r;
-    }, Classy.PUBLIC, {l:l})
+    }
 });
 
 var C3 = Classy.Class(C2, {
-    f1: Classy.Method(function( ) {
+    f1: function f1( ) {
         l('+ C3 f1');
-        var r = $method.$super.call(this)+3;
+        var r = f1.$super.call(this)+3;
         l('- C3 f1');
         return r;
-    }, Classy.PUBLIC, {l:l}),
-    f2: Classy.Method(function( ) {
+    },
+    f2: function f2( ) {
         l('+ C3 f2');
-        var r = $method.$super.call(this)+3;
+        var r = f2.$super.call(this)+3;
         l('- C3 f2');
         return r;
-    }, Classy.PUBLIC, {l:l}),
-    f3: Classy.Method(function( ) {
+    },
+    f3: function f3( ) {
         l('+ C3 f3');
-        var r = $method.$super.call(this)+3;
+        var r = f3.$super.call(this)+3;
         l('- C3 f3');
         return r;
-    }, Classy.PUBLIC, {l:l})
+    }
 });
 
 var C4 = Classy.Class(C3, {
-    f1: Classy.Method(function( ) {
+    f1: function f1( ) {
         l('+ C4 f1');
-        var r = $method.$super.call(this)+4;
+        var r = f1.$super.call(this)+4;
         l('- C4 f1');
         return r;
-    }, Classy.PUBLIC, {l:l}),
-    f2: Classy.Method(function( ) {
+    },
+    f2: function f2( ) {
         l('+ C4 f2');
-        var r = $method.$super.call(this)+4;
+        var r = f2.$super.call(this)+4;
         l('- C4 f2');
         return r;
-    }, Classy.PUBLIC, {l:l}),
-    f3: Classy.Method(function( ) {
+    },
+    f3: function f3( ) {
         l('+ C4 f3');
-        var r = $method.$super.call(this)+4;
+        var r = f3.$super.call(this)+4;
         l('- C4 f3');
         return r;
-    }, Classy.PUBLIC, {l:l})
+    }
 });
 
 var c = new C4();
