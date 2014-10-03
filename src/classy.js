@@ -261,35 +261,16 @@
         
         // this.$superv('method', [a, b]);
         // this.$super('method', a, b);
-        $SUPER = function( superClass, vectorSuper ) {
+        $SUPER = function( superClass ) {
             // return the function to handle the super call, handling possible recursion if needed
-            var _super_super, called = null;
-            if ( vectorSuper )
-            {
-                _super_super = superClass[SUPER+'v'] || dummySuper;
-                return function( method, args ) { 
-                    var r, m;
-                    if ( called === method )
-                    {
-                        // no recursion faster instead of recursing on this.$super and walking the prototype
-                        r = _super_super.call(this, method, args);
-                    }
-                    else if ( m=superClass[method] )
-                    {
-                        // .call is faster than .apply
-                        called = method;
-                        r = args && args.length ? m.apply(this, args) : m.call(this);
-                        called = null;
-                    }
-                    return r;
-                }
-            }
-            else
-            {
-                _super_super = superClass[SUPER] || dummySuper;
+            var _super_super = superClass[SUPER] || dummySuper, 
+                _super_superv = superClass[SUPER+'v'] || dummySuper, 
+                called = null;
+                return [
+                // $super
                 /*, var args here.. */
                 /* use up to 10 arguments for speed, use $superv for arbitrary arguments */
-                return function( method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9 ) { 
+                function( method, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9 ) { 
                     var r, m;
                     if ( called === method )
                     {
@@ -305,8 +286,25 @@
                         called = null;
                     }
                     return r;
+                },
+                // $superv
+                function( method, args ) { 
+                    var r, m;
+                    if ( called === method )
+                    {
+                        // no recursion faster instead of recursing on this.$super and walking the prototype
+                        r = _super_superv.call(this, method, args);
+                    }
+                    else if ( m=superClass[method] )
+                    {
+                        // .call is faster than .apply
+                        called = method;
+                        r = args && args.length ? m.apply(this, args) : m.call(this);
+                        called = null;
+                    }
+                    return r;
                 }
-            }
+            ];
         },
         
         /**[DOC_MARKDOWN]
@@ -383,7 +381,7 @@
             var $static = superClass[STATIC] || null,
                 superClassProto = superClass[PROTO], 
                 C, __static__ = null, currect$static = null,
-                __private__ = { }, 
+                __private__ = { }, $super,
                 i, l, prop, key, val, T, mname, method
             ;
             
@@ -451,7 +449,7 @@
             
             C[PROTO] = Alias( Create( superClassProto ), namespace, aliases );
             C[PROTO] = Merge( C[PROTO], subClassProto );
-            
+            $super = $SUPER( superClassProto );
             prop = { };
             prop[CLASS] = prop[CONSTRUCTOR] = {
                 value: C,
@@ -460,13 +458,13 @@
                 configurable: true
             };
             prop[SUPER] = {
-                value: $SUPER( superClassProto ),
+                value: $super[0],
                 enumerable: false,
                 writable: true,
                 configurable: true
             };
             prop[SUPER+'v'] = {
-                value: $SUPER( superClassProto, true ),
+                value: $super[1],
                 enumerable: false,
                 writable: true,
                 configurable: true
