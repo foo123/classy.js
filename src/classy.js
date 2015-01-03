@@ -23,12 +23,13 @@
         PUBLIC_PROP = 2, PRIVATE_PROP = 4, STATIC_PROP = 8,
         Obj = Object, OP = Obj[PROTO], Func = Function, FP = Func[PROTO], 
         Str = String, Num = Number, Regex = RegExp, Arr = Array, 
-        toStr = FP.call.bind(OP.toString), stringifyFunc = FP.call.bind(FP.toString),
+        toString = OP.toString, /*toStr = FP.call.bind(toString),*/ stringifyFunc = FP.call.bind(FP.toString),
         /*AP = Arr[PROTO], slice = FP.call.bind(AP.slice),*/ 
-        hasProperty = FP.call.bind(OP.hasOwnProperty), 
-        propertyIsEnum = FP.call.bind(OP.propertyIsEnumerable), Keys = Obj.keys, defineProperty = Obj.defineProperty,
+        /*hasProperty = FP.call.bind(OP.hasOwnProperty),*/ HAS = 'hasOwnProperty', 
+        /*propertyIsEnum = FP.call.bind(OP.propertyIsEnumerable),*/ IS_ENUM = 'propertyIsEnumerable',
+        Keys = Obj.keys, defineProperty = Obj.defineProperty,
         
-        is_instance = function(o, t) { return o instanceof t; },
+        //is_instance = function(o, t) { return o instanceof t; },
         typeOf = function( v ) { return typeof( v ); },
         type_error = function( msg ) { throw new TypeError( msg ); },
         
@@ -43,29 +44,33 @@
         T_STR = 8, T_CHAR = 9,
         T_ARRAY = 16, T_OBJ = 32, T_FUNC = 64,  T_REGEX = 128,
         T_NULL = 256, T_UNDEF = 512, T_UNKNOWN = 1024,
+        TO_STRING = {
+            "[object Array]"    : T_ARRAY,
+            "[object RegExp]"   : T_REGEX,
+            "[object Number]"   : T_NUM,
+            "[object String]"   : T_STR,
+            "[object Function]" : T_FUNC,
+            "[object Object]"   : T_OBJ
+        },
         get_type = function( v ) {
-            var type_of, to_string;
+            var /*type_of,*/ to_string;
             
             if (null === v)  return T_NULL;
-            
             else if (true === v || false === v)  return T_BOOL;
+            else if (undef === v /*|| "undefined" === type_of*/)  return T_UNDEF;
             
-            type_of = typeOf(v); to_string = toStr(v);
+            //type_of = typeOf(v);
+            to_string = toString.call( v );
+            //to_string = TO_STRING[HAS](to_string) ? TO_STRING[to_string] : T_UNKNOWN;
+            to_string = TO_STRING[to_string] || T_UNKNOWN;
             
-            if (undef === v || "undefined" === type_of)  return T_UNDEF;
-            
-            else if (is_instance(v, Num) || "number" === type_of)  return isNaN(v) ? T_NAN : T_NUM;
-            
-            else if (is_instance(v, Str) || "string" === type_of) return (1 === v.length) ? T_CHAR : T_STR;
-            
-            else if (is_instance(v, Arr) || "[object Array]" === to_string)  return T_ARRAY;
-            
-            else if (is_instance(v, Regex) || "[object RegExp]" === to_string)  return T_REGEX;
-            
-            else if (is_instance(v, Func) || ("function" === type_of && "[object Function]" === to_string))  return T_FUNC;
-            
-            else if ("[object Object]" === to_string)  return T_OBJ;
-            
+            //if (undef === v /*|| "undefined" === type_of*/)  return T_UNDEF;
+            if (T_NUM === to_string || v instanceof Num)  return isNaN(v) ? T_NAN : T_NUM;
+            else if (T_STR === to_string || v instanceof Str) return (1 === v.length) ? T_CHAR : T_STR;
+            else if (T_ARRAY === to_string || v instanceof Arr)  return T_ARRAY;
+            else if (T_REGEX === to_string || v instanceof Regex)  return T_REGEX;
+            else if (T_FUNC === to_string || v instanceof Func)  return T_FUNC;
+            else if (T_OBJ === to_string)  return T_OBJ;
             // unkown type
             return T_UNKNOWN;
         },
@@ -84,15 +89,15 @@
 
             var d = {};
             
-            if ( hasProperty(desc, "enumerable") )   d.enumerable = !!obj.enumerable;
+            if ( desc[HAS]("enumerable") )   d.enumerable = !!obj.enumerable;
             
-            if ( hasProperty(desc, "configurable") ) d.configurable = !!obj.configurable;
+            if ( desc[HAS]("configurable") ) d.configurable = !!obj.configurable;
             
-            if ( hasProperty(desc, "value") )    d.value = obj.value;
+            if ( desc[HAS]("value") )    d.value = obj.value;
             
-            if ( hasProperty(desc, "writable") )  d.writable = !!desc.writable;
+            if ( desc[HAS]("writable") )  d.writable = !!desc.writable;
             
-            if ( hasProperty(desc, "get") ) 
+            if ( desc[HAS]("get") ) 
             {
                 var g = desc.get;
 
@@ -100,7 +105,7 @@
                 d.get = g;
             }
             
-            if ( hasProperty(desc, "set") ) 
+            if ( desc[HAS]("set") ) 
             {
                 var s = desc.set;
                 
@@ -173,7 +178,7 @@
                 {
                     for (p in o2)
                     {            
-                        if ( hasProperty(o2, p) && propertyIsEnum(o2, p) ) 
+                        if ( o2[HAS](p) && o2[IS_ENUM](p) ) 
                         {
                             v = o2[p];
                             T = get_type( v );
@@ -219,17 +224,20 @@
                 {
                     for (p in o)
                     {
-                        if ( CONSTRUCTOR !== p )
+                        if ( o[HAS](p) )
                         {
-                            // only method namespacing
-                            if ( hasNamespace && 
-                                T_FUNC === get_type(o[ p ]) )  ao[ namespace + p ] = o[ p ];
-                            // aliases can be a function as well
-                            ao[ aliases( p, o[ p ] ) ] = o[ p ];
-                        }
-                        else
-                        {
-                            ao[ p ] = o[ p ];
+                            if ( CONSTRUCTOR !== p )
+                            {
+                                // only method namespacing
+                                if ( hasNamespace && 
+                                    T_FUNC === get_type(o[ p ]) )  ao[ namespace + p ] = o[ p ];
+                                // aliases can be a function as well
+                                ao[ aliases( p, o[ p ] ) ] = o[ p ];
+                            }
+                            else
+                            {
+                                ao[ p ] = o[ p ];
+                            }
                         }
                     }
                 }
@@ -237,17 +245,20 @@
                 {
                     for (p in o)
                     {
-                        if ( CONSTRUCTOR !== p )
+                        if ( o[HAS](p) )
                         {
-                            // only method namespacing
-                            if ( hasNamespace && 
-                                T_FUNC === get_type(o[ p ]) )   ao[ namespace + p ] = o[ p ];
-                            if ( aliases && (p in aliases) )    ao[ aliases[ p ] ] = o[ p ];
-                            else                                ao[ p ] = o[ p ];
-                        }
-                        else
-                        {
-                            ao[ p ] = o[ p ];
+                            if ( CONSTRUCTOR !== p )
+                            {
+                                // only method namespacing
+                                if ( hasNamespace && 
+                                    T_FUNC === get_type(o[ p ]) )   ao[ namespace + p ] = o[ p ];
+                                if ( aliases && (p in aliases) )    ao[ aliases[ p ] ] = o[ p ];
+                                else                                ao[ p ] = o[ p ];
+                            }
+                            else
+                            {
+                                ao[ p ] = o[ p ];
+                            }
                         }
                     }
                 }
@@ -386,17 +397,17 @@
             ;
             
             // fix issue when constructor is missing
-            if ( !hasProperty(subClassProto, CONSTRUCTOR) ) subClassProto[CONSTRUCTOR] = function( ){ };
+            if ( !subClassProto[HAS](CONSTRUCTOR) ) subClassProto[CONSTRUCTOR] = function( ){ };
             
             C = subClassProto[CONSTRUCTOR];
             
-            if ( hasProperty(subClassProto, __PRIVATE__) )
+            if ( subClassProto[HAS](__PRIVATE__) )
             {
                 __private__ = subClassProto[__PRIVATE__] || { };
                 delete subClassProto[__PRIVATE__];
             }
             
-            if ( hasProperty(subClassProto, __STATIC__) )
+            if ( subClassProto[HAS](__STATIC__) )
             {
                 // $static / __static__ props/methods and associated keys
                 // __static__ = actual props/methods
@@ -410,40 +421,46 @@
             // add $SCOPED/Method functionality as well
             for (mname in subClassProto)
             {
-                method = subClassProto[ mname ];
-                if ( method instanceof Method )
+                if ( subClassProto[HAS](mname) )
                 {
-                    if ( STATIC_PROP & method.qualifier )
+                    method = subClassProto[ mname ];
+                    if ( method instanceof Method )
                     {
-                        (__static__=__static__||{})[ mname ] = method.factory( superClass, __private__, C );
-                        (currect$static=currect$static||[]).push( mname );
-                        delete subClassProto[mname];
-                        continue;
+                        if ( STATIC_PROP & method.qualifier )
+                        {
+                            (__static__=__static__||{})[ mname ] = method.factory( superClass, __private__, C );
+                            (currect$static=currect$static||[]).push( mname );
+                            delete subClassProto[mname];
+                            continue;
+                        }
+                        else if ( PRIVATE_PROP & method.qualifier )
+                        {
+                            __private__[ mname ] = method;
+                            delete subClassProto[mname];
+                            continue;
+                        }
+                        subClassProto[mname] = method.factory( superClassProto, __private__, C );
                     }
-                    else if ( PRIVATE_PROP & method.qualifier )
+                    if ( T_FUNC === get_type(method) )
                     {
-                        __private__[ mname ] = method;
-                        delete subClassProto[mname];
-                        continue;
+                        // enable NFE-style super functionality as well
+                        method[SUPER] = superClassProto[mname] || dummySuper;
                     }
-                    subClassProto[mname] = method.factory( superClassProto, __private__, C );
-                }
-                if ( T_FUNC === get_type(method) )
-                {
-                    // enable NFE-style super functionality as well
-                    method[SUPER] = superClassProto[mname] || dummySuper;
                 }
             }
             for (mname in __private__)
             {
-                method = __private__[ mname ];
-                if ( method instanceof Method )
+                if ( __private__[HAS](mname) )
                 {
-                    method = __private__[mname] = method.factory( superClassProto, __private__, C );
-                }
-                if ( !(T_FUNC === get_type(method)) )
-                {
-                    delete __private__[mname];
+                    method = __private__[ mname ];
+                    if ( method instanceof Method )
+                    {
+                        method = __private__[mname] = method.factory( superClassProto, __private__, C );
+                    }
+                    if ( !(T_FUNC === get_type(method)) )
+                    {
+                        delete __private__[mname];
+                    }
                 }
             }
             
@@ -823,24 +840,24 @@
                 
                 if ( T_FUNC === _qualifier )
                     // shortcut to extend a class
-                    _qualifier = { Extends: args[0] };
+                    _qualifier = { 'Extends': args[0] };
                 else if ( T_OBJ === _qualifier )
                     _qualifier = args[0];
                 else
-                    _qualifier = { Extends: Obj };
+                    _qualifier = { 'Extends': Obj };
                 
                 var _proto = args[1] || {},
                     _protomix = {},
-                    _extends = _qualifier.Extends || _qualifier.extends || Obj,
-                    _implements = _qualifier.Implements || _qualifier.implements,
-                    _mixin = _qualifier.Mixin || _qualifier.mixin,
+                    _extends = _qualifier[HAS]('Extends') ? _qualifier['Extends'] : (_qualifier[HAS]('extends') ? _qualifier['extends'] : Obj),
+                    _implements = _qualifier[HAS]('Implements') ? _qualifier['Implements'] : (_qualifier[HAS]('implements') ? _qualifier['implements'] : null),
+                    _mixin = _qualifier[HAS]('Mixin') ? _qualifier['Mixin'] : (_qualifier[HAS]('mixin') ? _qualifier['mixin'] : null),
                     _protoalias = null,
                     i, l
                 ;
                 
                 // make them arrays, if not
-                _implements = (_implements) ? [].concat(_implements) : null;
-                _mixin = (_mixin) ? [].concat(_mixin) : null;
+                _implements = _implements ? [].concat(_implements) : null;
+                _mixin = _mixin ? [].concat(_mixin) : null;
                 
                 if ( _mixin )
                 {
@@ -848,7 +865,7 @@
                     {
                         if ( T_OBJ === get_type( _mixin[i] ) )
                         {
-                            if ( _mixin[i].mixin && _mixin[i].mixin[PROTO] )
+                            if ( _mixin[i][HAS]('mixin') && _mixin[i].mixin && _mixin[i].mixin[PROTO] )
                             {
                                 _protoalias = Alias(
                                     _mixin[i].mixin[PROTO], 
@@ -872,7 +889,7 @@
                     {
                         if ( T_OBJ === get_type( _implements[i] ) )
                         {
-                            if ( _implements[i].implements && _implements[i].implements[PROTO] )
+                            if ( _implements[i][HAS]('implements') && _implements[i]['implements'] && _implements[i]['implements'][PROTO] )
                             {
                                 _protoalias = Alias(
                                     _implements[i].implements[PROTO], 
