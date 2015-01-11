@@ -1,0 +1,76 @@
+###################################################
+#
+#   The buildtools repository is at:
+#   https://github.com/foo123/Beeld
+#
+###################################################
+
+#define 2 tasks to execute in order
+tasks =[{}]
+    
+    # 1. make_js: makes the .js file
+    make_js ={} 
+        src =[]
+            
+            !tpl:umd-header-single.tpl.js  # include a umd-header template
+            ./src/classy.js
+            !tpl:umd-footer.tpl.js  # include a umd-footer template
+            
+        @ # end block
+
+        # extract header from this file
+        header = ./src/classy.js
+
+
+        replace =[{}]
+
+            "@@ROOT@@" = "this"
+            "@@EXPORTS@@" = "exports"
+            "@@VERSION@@" = "0.9.2"
+            "@@MODULE_NAME@@" = "Classy"
+            
+        @ # end block
+
+        out = ./build/classy.js
+    
+    @ # end block
+    
+    
+    # 2. make_min: makes the .min.js file
+    make_min ={}
+        src =[]
+            ./build/classy.js
+        @ # end block
+
+        # extract documentation from the source (map)
+        doc ={}
+            "startdoc" = "/**[DOC_MARKDOWN]"
+            "enddoc" = "[/DOC_MARKDOWN]**/"
+            "trimx" = "\\s*\\*[ ]?"
+            "output" = "./api-reference.md"
+        @ # end block
+
+        # Minify the Package (map of lists)
+        minify ={}
+
+            # Options for Node UglifyJS Compiler (if used, default), (mangle and compress)
+            "uglifyjs" =[]
+                -m -c
+            @ # end block
+
+            # Options for Java Closure Compiler (if used)
+            "closure" =[]
+                --language_in=ECMASCRIPT5_STRICT
+            @ # end block
+
+            # Options for Java YUI Compressor Compiler (if used)
+            "yui" =[]
+                --preserve-semi
+            @ # end block
+
+        @ # end block
+
+        out = ./build/classy.min.js
+    @ # end block
+    
+@ # end block
