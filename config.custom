@@ -5,17 +5,23 @@
 #
 ###################################################
 
+plugins =[{}]
+    # include 'doc' plugin from plugins folder
+    "doc" = "!plg:doc"
+@
+
 #define 2 tasks to execute in order
 tasks =[{}]
     
-    build ={} 
+    build =[{}]
+        
         src =[]
             
             !tpl:umd-header-single.tpl.js  # include a umd-header template
             ./src/classy.js
             !tpl:umd-footer.tpl.js  # include a umd-footer template
             
-        @ # end block
+        @
 
         # extract header from this file
         header = ./src/classy.js
@@ -28,17 +34,18 @@ tasks =[{}]
             "@@VERSION@@" = "0.9.2"
             "@@MODULE_NAME@@" = "Classy"
             
-        @ # end block
+        @
 
         out = ./build/classy.js
     
-    @ # end block
+    @
     
     
-    minify ={}
+    minify =[{}]
+        
         src =[]
             ./build/classy.js
-        @ # end block
+        @
 
         # extract documentation from the source (map)
         doc ={}
@@ -46,29 +53,29 @@ tasks =[{}]
             "enddoc" = "[/DOC_MARKDOWN]**/"
             "trimx" = "\\s*\\*[ ]?"
             "output" = "./api-reference.md"
-        @ # end block
+        @
 
         # Minify the Package (map of lists)
         minify ={}
 
             # Options for Node UglifyJS Compiler (if used, default), (mangle and compress)
-            "uglifyjs" =[]
+            uglifyjs =[]
                 -m -c
-            @ # end block
+            @
 
             # Options for Java Closure Compiler (if used)
-            "closure" =[]
+            closure =[]
                 "--language_in=ECMASCRIPT5_STRICT"
-            @ # end block
+            @
 
             # Options for Java YUI Compressor Compiler (if used)
-            "yui" =[]
+            yui =[]
                 --preserve-semi
-            @ # end block
+            @
 
-        @ # end block
+        @
 
         out = ./build/classy.min.js
-    @ # end block
+    @
     
-@ # end block
+@
