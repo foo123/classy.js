@@ -250,97 +250,97 @@ __NOTE__ One can use a mix of these super schemes in any given class, however du
         
 
 
-__Classy Sweet Macros__
-
-A set of [sweet.js](http://github.com/mozilla/sweet.js) macros for classy.js are included in order to have a full object-oriented syntactic sugar
-for your projects, similar to php or java
-
-see [macros](/macros) folder for the src and examples of how to use.
-
-__Example:__
-
-```javascript
-
-// require the classy lib here, compile this file including the macros/classy.sweet.js macro lib
-var Classy = require('../build/classy');
-
-// define a Parent super class
-Class aParent {
-
-    // static method (inherited by subclasses)
-    // method arguments default values supported
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/default_parameters
-    // rest parameters also supported
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions_and_function_scope/rest_parameters
-    static aStaticMethod(msg = '', ...rest) { 
-        console.log(rest);
-        return 'Static Parent ' + msg; 
-    }
-    
-    // static prop (inherited by subclasses)
-    // method arguments default values supported
-    static aStaticProp = 1;
-    
-    // block definition of static properties / methods (inherited by subclasses)
-    static: {
-        
-        aStaticProp2 =  1;
-        
-        // method arguments default values supported
-        aStaticMethod2(msg = '') { 
-            return 'Static '+msg; 
-        }
-    }
-    
-    // a property with initial value
-    aProp = 1;
-    
-    // a property no initial value (null by default)
-    msg;
-    
-    // class constructor
-    // method arguments default values supported
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/default_parameters
-    // rest parameters also supported
-    // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions_and_function_scope/rest_parameters
-    constructor (msg = '', ...rest) {
-       this.msg = msg;
-    }
-    
-    // class method
-    sayHi () {
-       return this.msg;
-    }
-}
-
-
-// define a Chlld sub class
-Class aChild extends aParent implements String, RegExp {
-    
-    // method arguments default values supported
-    static aStaticMethod(msg = '') { 
-        return 'Static Child ' + msg; 
-    }
-    
-    constructor (msg = '') {
-       // call super constructor (js-style)
-       super(msg);
-       // call super constructor or other super method (PHP-style)
-       //super.constructor(msg);
-       this.msg = 'child says also ' + this.msg;
-    }
-}
-
-
-// do the test
-console.log("Classy.VERSION = " + Classy.VERSION);
-console.log(new aParent('Hi').sayHi());
-console.log(new aChild('Hi').sayHi());
-console.log(aParent.aStaticMethod('aParent'));
-console.log(aChild.aStaticMethod('aChild'));
-console.log(aParent.aStaticMethod2('aParent'));
-console.log(aChild.aStaticMethod2('aChild'));
-
-```
-
+        * __Classy Sweet Macros__
+        *
+        * A set of [sweet.js](http://github.com/mozilla/sweet.js) macros for classy.js are included in order to have a full object-oriented syntactic sugar
+        * for your projects, similar to php or java
+        *
+        * see [macros](/macros) folder for the src and examples of how to use.
+        *
+        * __Example:__
+        *
+        * ```javascript
+        *
+        * // require the classy lib here, compile this file including the macros/classy.sweet.js macro lib
+        * var Classy = require('../build/classy');
+        * 
+        * // define a Parent super class
+        * Class aParent {
+        *
+        *     // static method (inherited by subclasses)
+        *     // method arguments default values supported
+        *     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/default_parameters
+        *     // rest parameters also supported
+        *     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions_and_function_scope/rest_parameters
+        *     static aStaticMethod(msg = '', ...rest) { 
+        *         console.log(rest);
+        *         return 'Static Parent ' + msg; 
+        *     }
+        *     
+        *     // static prop (inherited by subclasses)
+        *     // method arguments default values supported
+        *     static aStaticProp = 1;
+        *     
+        *     // block definition of static properties / methods (inherited by subclasses)
+        *     static: {
+        *         
+        *         aStaticProp2 =  1;
+        *         
+        *         // method arguments default values supported
+        *         aStaticMethod2(msg = '') { 
+        *             return 'Static '+msg; 
+        *         }
+        *     }
+        *     
+        *     // a property with initial value
+        *     aProp = 1;
+        *     
+        *     // a property no initial value (null by default)
+        *     msg;
+        *     
+        *     // class constructor
+        *     // method arguments default values supported
+        *     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/default_parameters
+        *     // rest parameters also supported
+        *     // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions_and_function_scope/rest_parameters
+        *     constructor (msg = '', ...rest) {
+        *        this.msg = msg;
+        *     }
+        *     
+        *     // class method
+        *     sayHi () {
+        *        return this.msg;
+        *     }
+        * }
+        * 
+        * 
+        * // define a Chlld sub class
+        * Class aChild extends aParent implements String, RegExp {
+        *     
+        *     // method arguments default values supported
+        *     static aStaticMethod(msg = '') { 
+        *         return 'Static Child ' + msg; 
+        *     }
+        *     
+        *     constructor (msg = '') {
+        *        // call super constructor (js-style)
+        *        super(msg);
+        *        // call super constructor or other super method (PHP-style)
+        *        //super.constructor(msg);
+        *        this.msg = 'child says also ' + this.msg;
+        *     }
+        * }
+        * 
+        * 
+        * // do the test
+        * console.log("Classy.VERSION = " + Classy.VERSION);
+        * console.log(new aParent('Hi').sayHi());
+        * console.log(new aChild('Hi').sayHi());
+        * console.log(aParent.aStaticMethod('aParent'));
+        * console.log(aChild.aStaticMethod('aChild'));
+        * console.log(aParent.aStaticMethod2('aParent'));
+        * console.log(aChild.aStaticMethod2('aChild'));
+        *
+        * ```
+        *
         
