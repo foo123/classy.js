@@ -2,7 +2,7 @@
 *
 *   Classy.js
 *   @version: 0.9.3
-*   @built on 2015-04-26 15:08:50
+*   @built on 2015-04-26 17:56:03
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -38,7 +38,7 @@
 *
 *   Classy.js
 *   @version: 0.9.3
-*   @built on 2015-04-26 15:08:50
+*   @built on 2015-04-26 17:56:03
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -481,9 +481,9 @@
                         {
                             if ( LATE_BINDING & method.qualifier )
                             {
-                                (__static__=__static__||{})[ mname ] = mname;
+                                //(__static__=__static__||{})[ mname ] = mname;
                                 __latestatic__[ mname ] = method;
-                                (currect$static=currect$static||[]).push( mname );
+                                //(currect$static=currect$static||[]).push( mname );
                             }
                             else
                             {
@@ -565,13 +565,13 @@
                         {
                             if ( (STATIC_PROP|LATE_BINDING) & method.qualifier )
                             {
-                                __static__[ key ] = key;
+                                //__static__[ key ] = key;
                                 __latestatic__[ key ] = method;
                                 continue;
                             }
                             else
                             {
-                                val = __static__[ key ] = method.factory( superClass, __private__, C );
+                                val = /*__static__[ key ] =*/ method.factory( superClass, __private__, C );
                             }
                         }
                         // implememnt a version of Late Static Binding here

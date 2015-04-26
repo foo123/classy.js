@@ -445,9 +445,9 @@
                         {
                             if ( LATE_BINDING & method.qualifier )
                             {
-                                (__static__=__static__||{})[ mname ] = mname;
+                                //(__static__=__static__||{})[ mname ] = mname;
                                 __latestatic__[ mname ] = method;
-                                (currect$static=currect$static||[]).push( mname );
+                                //(currect$static=currect$static||[]).push( mname );
                             }
                             else
                             {
@@ -529,13 +529,13 @@
                         {
                             if ( (STATIC_PROP|LATE_BINDING) & method.qualifier )
                             {
-                                __static__[ key ] = key;
+                                //__static__[ key ] = key;
                                 __latestatic__[ key ] = method;
                                 continue;
                             }
                             else
                             {
-                                val = __static__[ key ] = method.factory( superClass, __private__, C );
+                                val = /*__static__[ key ] =*/ method.factory( superClass, __private__, C );
                             }
                         }
                         // implememnt a version of Late Static Binding here
