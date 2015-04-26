@@ -525,10 +525,23 @@
                     key = $static[ i ]; val = null;
                     if ( __static__ && undef !== __static__[ key ] )
                     {
+                        if ( (method=__static__[ key ]) instanceof Method )
+                        {
+                            if ( (STATIC_PROP|LATE_BINDING) & method.qualifier )
+                            {
+                                __static__[ key ] = key;
+                                __latestatic__[ key ] = method;
+                                continue;
+                            }
+                            else
+                            {
+                                val = __static__[ key ] = method.factory( superClass, __private__, C );
+                            }
+                        }
                         // implememnt a version of Late Static Binding here
                         // to bind the $class dynamicaly on each class extension
                         // similar to PHP self:: or static:: late static binding
-                        if ( __latestatic__[HAS]( key ) )
+                        else if ( __latestatic__[HAS]( key ) )
                         {
                             //val = __latestatic__[key].factory( superClass, __private__, C );
                             continue;
