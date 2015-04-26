@@ -4,7 +4,7 @@ classy.js
 [classy.js](https://raw.githubusercontent.com/foo123/classy.js/master/build/classy.js),  [classy.min.js](https://raw.githubusercontent.com/foo123/classy.js/master/build/classy.min.js)
 
 
-Object-Oriented mini-framework ( ~5kB minified, ~3kB gzipped ) for JavaScript
+Object-Oriented mini-framework ( ~6kB minified, ~3kB gzipped ) for JavaScript
 
 __Example:__    [API Reference](/api-reference.md)
 

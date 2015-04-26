@@ -2,6 +2,7 @@
 *
 *   Classy.js
 *   @version: @@VERSION@@
+*   @built on @@DATE@@
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -19,8 +20,8 @@
     
     var CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO__ = "__proto__", 
         __STATIC__ = "__static__", __PRIVATE__ = "__private__", PRIVATE = "$private",
-        SUPER = "$super", STATIC = "$static", CLASS = "$class", METHOD = "$method",
-        PUBLIC_PROP = 2, PRIVATE_PROP = 4, STATIC_PROP = 8,
+        SUPER = "$super", STATIC = "$static", LATESTATIC = "$latestatic", CLASS = "$class", METHOD = "$method",
+        PUBLIC_PROP = 2, PRIVATE_PROP = 4, STATIC_PROP = 8, LATE_BINDING = 256,
         Obj = Object, OP = Obj[PROTO], Func = Function, FP = Func[PROTO], 
         Str = String, Num = Number, Regex = RegExp, Arr = Array, 
         toString = OP.toString, /*toStr = FP.call.bind(toString),*/ stringifyFunc = FP.call.bind(FP.toString),
@@ -325,7 +326,7 @@
         * aMethod = Classy.Method(Function methodFactory [, FLAG qualifier=Classy.PUBLIC]);
         * ```
         *
-        * Return a *method* accessed as qualifier (PUBLIC/STATIC/PRIVATE),
+        * Return a *method* accessed as qualifier (PUBLIC/STATIC/LATE/PRIVATE),
         * where direct contextual information (e.g faster "$super" reference) can be added transparently (as a closure)
         *
         * example:
@@ -353,6 +354,18 @@
         *               // ...
         *           }
         *     }, Classy.STATIC )
+        *
+        *     // accessible as "aClass.aLateStaticBindMethod" (extendable)
+        *     // classy implements "LATE STATIC BINDING" for static methods (with Classy.LATE|Classy.STATIC flags)
+        *     aLateStaticBindMethod: Classy.Method(function($super, $private, $class){
+        *           // $super is the direct reference to the superclass itself (NOT the prototype)
+        *           // $private is the direct reference to the private methods of this class (if any)
+        *           // $class is the direct reference to this class itself (NOT the prototype)
+        *           return function( a, b ){ 
+        *               console.log($class.name); // this should be dynamicaly binded for each subclass
+        *               // ...
+        *           }
+        *     }, Classy.LATE|Classy.STATIC )
         * });
         * ```
         *
@@ -390,8 +403,10 @@
             superClass = superClass || Obj;
             subClassProto = subClassProto || {};
             var $static = superClass[STATIC] || null,
+                $latestatic = superClass[LATESTATIC] || {},
                 superClassProto = superClass[PROTO], 
-                C, __static__ = null, currect$static = null,
+                C, __static__ = null, __latestatic__ = Merge({}, $latestatic), 
+                currect$static = null,
                 __private__ = { }, $super,
                 i, l, prop, key, val, T, mname, method
             ;
@@ -428,8 +443,17 @@
                     {
                         if ( STATIC_PROP & method.qualifier )
                         {
-                            (__static__=__static__||{})[ mname ] = method.factory( superClass, __private__, C );
-                            (currect$static=currect$static||[]).push( mname );
+                            if ( LATE_BINDING & method.qualifier )
+                            {
+                                (__static__=__static__||{})[ mname ] = mname;
+                                __latestatic__[ mname ] = method;
+                                (currect$static=currect$static||[]).push( mname );
+                            }
+                            else
+                            {
+                                (__static__=__static__||{})[ mname ] = method.factory( superClass, __private__, C );
+                                (currect$static=currect$static||[]).push( mname );
+                            }
                             delete subClassProto[mname];
                             continue;
                         }
@@ -439,7 +463,7 @@
                             delete subClassProto[mname];
                             continue;
                         }
-                        subClassProto[mname] = method.factory( superClassProto, __private__, C );
+                        method = subClassProto[mname] = method.factory( superClassProto, __private__, C );
                     }
                     if ( T_FUNC === get_type(method) )
                     {
@@ -498,11 +522,21 @@
                 //prop = {};
                 for (i=0; i<l; i++)
                 {
-                    key = $static[ i ];
-                    val = null;
+                    key = $static[ i ]; val = null;
                     if ( __static__ && undef !== __static__[ key ] )
                     {
-                        val = __static__[ key ];
+                        // implememnt a version of Late Static Binding here
+                        // to bind the $class dynamicaly on each class extension
+                        // similar to PHP self:: or static:: late static binding
+                        if ( __latestatic__[HAS]( key ) )
+                        {
+                            //val = __latestatic__[key].factory( superClass, __private__, C );
+                            continue;
+                        }
+                        else
+                        {
+                            val = __static__[ key ];
+                        }
                         // add direct super reference as well
                         if ( T_FUNC === get_type(val) )
                             val[SUPER] = superClass[ key ] || dummySuper;
@@ -528,8 +562,30 @@
                     };
                 }
             }
+            for ( key in __latestatic__ )
+            {
+                // implememnt a version of Late Static Binding here
+                // to bind the $class dynamicaly on each class extension
+                // similar to PHP self:: or static:: late static binding
+                if ( __latestatic__[HAS]( key ) )
+                {
+                    val = __latestatic__[key].factory( superClass, __private__, C );
+                    prop[ key ] = {
+                        value: val,
+                        enumerable: false,
+                        writable: true,
+                        configurable: true
+                    };
+                }
+            }
             prop[STATIC] = {
                 value: $static,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            };
+            prop[LATESTATIC] = {
+                value: __latestatic__,
                 enumerable: false,
                 writable: true,
                 configurable: true
@@ -573,8 +629,9 @@
         Dispose = function( aClass ) {
             var i, l, o, k;
             if ( !(T_FUNC === get_type(aClass)) ) return;
-            if ( SUPER in aClass )  aClass[SUPER] = null;
-            if ( CLASS in aClass ) aClass[CLASS] = null;
+            if ( SUPER in aClass )  aClass[SUPER] = undef;
+            if ( CLASS in aClass ) aClass[CLASS] = undef;
+            if ( LATESTATIC in aClass ) aClass[LATESTATIC] = undef;
             if ( STATIC in aClass )
             {
                 o = aClass[STATIC];
@@ -584,23 +641,23 @@
                     if ( k in aClass )
                     {
                         if ( T_FUNC === get_type(aClass[k]) && aClass[k][SUPER] )
-                            aClass[k][SUPER] = null;
-                        aClass[k] = null;
+                            aClass[k][SUPER] = undef;
+                        aClass[k] = undef;
                     }
                 }
-                aClass[STATIC] = null;
+                aClass[STATIC] = undef;
             }
             o = aClass[PROTO];
             for (k in o)
             {
                 if ( T_FUNC === get_type(o[k]) )
                 {
-                    if ( o[k][SUPER] ) o[k][SUPER] = null;
-                    o[k] = null;
+                    if ( o[k][SUPER] ) o[k][SUPER] = undef;
+                    o[k] = undef;
                 }
             }
-            o[SUPER] = null;
-            o[SUPER+'v'] = null;
+            o[SUPER] = undef;
+            o[SUPER+'v'] = undef;
         },
         
         /**[DOC_MARKDOWN]
@@ -648,11 +705,12 @@
         *       aStaticMethod: function(msg) { console.log(msg); }
         *     },
         *     // alternative way to define static methods/props (extendable)
+        *     // classy implements "LATE STATIC BINDING" for static methods (with Classy.STATIC|Classy.LATE flags)
         *     aStaticMethod2: Classy.Method(function($super, $private, $class){
         *           return function(msg) { 
         *               console.log(msg); 
         *           }
-        *     }, Classy.STATIC),
+        *     }, Classy.STATIC|Classy.LATE),
         *     
         *     // class constructor
         *     constructor: function(a, b) {
@@ -936,7 +994,7 @@
         
         VERSION: "@@VERSION@@",
         
-        PUBLIC: PUBLIC_PROP, STATIC: STATIC_PROP, PRIVATE: PRIVATE_PROP,
+        PUBLIC: PUBLIC_PROP, STATIC: STATIC_PROP, LATE: LATE_BINDING, PRIVATE: PRIVATE_PROP,
         
         Type: get_type,
         
