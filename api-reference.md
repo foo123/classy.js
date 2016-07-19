@@ -2,7 +2,7 @@
 
 ###Classy Methods
 
-    
+
 
 
 __Method__: *Create*
@@ -13,7 +13,7 @@ obj = Classy.Create(Object proto [, Object properties]);
 
 Create an obj having *proto* as prototype adding any optional *properties* (Polyfill around **Object.create** method).
 
-        
+    
 
 
 __Method__: *Merge*
@@ -24,7 +24,7 @@ proto = Classy.Merge(Object proto, Object proto1 [, Object proto2, ..]);
 
 Merge *objects/prototypes* into one *object/prototype* ( **Arrays** , **Strings** and **Numbers** are shallow copied, else copy by reference).
 
-        
+    
 
 
 __Method__: *Alias*
@@ -39,7 +39,7 @@ namespaced_and_or_aliased_proto = Classy.Alias(Object proto, String namespace=nu
 Namespace an object's methods and/or alias an object's methods/properties so as to avoid method naming conflicts.
 Useful when implementing multiple interfaces which might share same method names (and which **do not** internally use the original method names). Used internally by other Classy methods (which may include aliases) as well.
 
-        
+    
 
 
 __Method__: *Method*
@@ -91,7 +91,7 @@ aClass = Classy.Class(anotherClass, {
 });
 ```
 
-        
+    
 
 
 __Method__: *Extends*
@@ -103,7 +103,7 @@ subClass = Classy.Extends(Function superClass=Object [, Object proto]);
 Return a *subClass* that extends the *superClass* , with additional methods/properties defined in *proto* object.
 If *superClass* is not given or undefined or null, extend the **Object** class by default.
 
-        
+    
 
 
 __Methods__: *Implements* , *Mixin*
@@ -116,7 +116,7 @@ proto = Classy.Mixin(Object proto, Object proto1 [, Object proto2, ..]);
 
 These methods are aliases of **Classy.Merge** method (for now) and perform the same functionality.
 
-        
+    
 
 
 __Method__: *Dispose*
@@ -127,7 +127,7 @@ Classy.Dispose(Function aClassyClass);
 
 Dispose a Class definition and all references added by Classy.js
 
-        
+    
 
 
 __Method__: *Class*
@@ -211,7 +211,7 @@ aChild.aStaticProp;
 aChildInst.$class.aStaticProp;
 ```
 
-        
+    
 
 
 __Three Ways to make Super Calls__
@@ -260,7 +260,7 @@ Classy.js provides three ways to make a super call to the same method of a super
 
 __NOTE__ One can use a mix of these super schemes in any given class, however due to the different way these are implemented and synchronised, the scheme for super calls in the same methods along the class chain should be the same, else the $super calls will not have correct synchronisation resulting in wrong results.
 
-        
+    
 
 
 __Classy Sweet Macros__
@@ -356,4 +356,4 @@ console.log(aChild.aStaticMethod2('aChild'));
 
 ```
 
-        
+    
