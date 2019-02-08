@@ -1,8 +1,8 @@
 /**
 *
 *   Classy.js
-*   @version: 0.9.3
-*   @built on 2016-07-19 17:09:27
+*   @version: 1.0.0
+*   @built on 2019-02-08 13:26:49
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -23,8 +23,8 @@ else if ( !(name in root) ) /* Browser/WebWorker/.. */
 /**
 *
 *   Classy.js
-*   @version: 0.9.3
-*   @built on 2016-07-19 17:09:27
+*   @version: 1.0.0
+*   @built on 2019-02-08 13:26:49
 *
 *   Object-Oriented micro-framework for JavaScript
 *   https://github.com/foo123/classy.js
@@ -46,8 +46,8 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
     Str = String, Num = Number, Regex = RegExp, Arr = Array, 
     toString = OP.toString, /*toStr = FP.call.bind(toString),*/ stringifyFunc = FP.call.bind(FP.toString),
     /*AP = Arr[PROTO], slice = FP.call.bind(AP.slice),*/ 
-    /*hasProperty = FP.call.bind(OP.hasOwnProperty),*/ HAS = 'hasOwnProperty', 
-    /*propertyIsEnum = FP.call.bind(OP.propertyIsEnumerable),*/ IS_ENUM = 'propertyIsEnumerable',
+    /*hasProperty = FP.call.bind(OP.hasOwnProperty),*/ HAS = function(o, k){ return !!o && OP.hasOwnProperty.call(o, k); }, 
+    /*propertyIsEnum = FP.call.bind(OP.propertyIsEnumerable),*/ IS_ENUM = function(o, k){ return !!o && OP.propertyIsEnumerable.call(o, k); },
     Keys = Obj.keys, defineProperty = Obj.defineProperty,
     
     //is_instance = function(o, t) { return o instanceof t; },
@@ -82,7 +82,7 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
         
         //type_of = typeOf(v);
         to_string = toString.call( v );
-        //to_string = TO_STRING[HAS](to_string) ? TO_STRING[to_string] : T_UNKNOWN;
+        //to_string = HAS(TO_STRING,to_string) ? TO_STRING[to_string] : T_UNKNOWN;
         to_string = TO_STRING[to_string] || T_UNKNOWN;
         
         //if (undef === v /*|| "undefined" === type_of*/)  return T_UNDEF;
@@ -110,15 +110,15 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
 
         var d = {};
         
-        if ( desc[HAS]("enumerable") )   d.enumerable = !!obj.enumerable;
+        if ( HAS(desc,"enumerable") )   d.enumerable = !!obj.enumerable;
         
-        if ( desc[HAS]("configurable") ) d.configurable = !!obj.configurable;
+        if ( HAS(desc,"configurable") ) d.configurable = !!obj.configurable;
         
-        if ( desc[HAS]("value") )    d.value = obj.value;
+        if ( HAS(desc,"value") )    d.value = obj.value;
         
-        if ( desc[HAS]("writable") )  d.writable = !!desc.writable;
+        if ( HAS(desc,"writable") )  d.writable = !!desc.writable;
         
-        if ( desc[HAS]("get") ) 
+        if ( HAS(desc,"get") ) 
         {
             var g = desc.get;
 
@@ -126,7 +126,7 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
             d.get = g;
         }
         
-        if ( desc[HAS]("set") ) 
+        if ( HAS(desc,"set") ) 
         {
             var s = desc.set;
             
@@ -199,7 +199,7 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
             {
                 for (p in o2)
                 {            
-                    if ( o2[HAS](p) && o2[IS_ENUM](p) ) 
+                    if ( HAS(o2,p) && IS_ENUM(o2,p) ) 
                     {
                         v = o2[p];
                         T = get_type( v );
@@ -245,7 +245,7 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
             {
                 for (p in o)
                 {
-                    if ( o[HAS](p) )
+                    if ( HAS(o,p) )
                     {
                         if ( CONSTRUCTOR !== p )
                         {
@@ -266,7 +266,7 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
             {
                 for (p in o)
                 {
-                    if ( o[HAS](p) )
+                    if ( HAS(o,p) )
                     {
                         if ( CONSTRUCTOR !== p )
                         {
@@ -432,17 +432,17 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
         ;
         
         // fix issue when constructor is missing
-        if ( !subClassProto[HAS](CONSTRUCTOR) ) subClassProto[CONSTRUCTOR] = function( ){ };
+        if ( !HAS(subClassProto,CONSTRUCTOR) ) subClassProto[CONSTRUCTOR] = function( ){ };
         
         C = subClassProto[CONSTRUCTOR];
         
-        if ( subClassProto[HAS](__PRIVATE__) )
+        if ( HAS(subClassProto,__PRIVATE__) )
         {
             __private__ = subClassProto[__PRIVATE__] || { };
             delete subClassProto[__PRIVATE__];
         }
         
-        if ( subClassProto[HAS](__STATIC__) )
+        if ( HAS(subClassProto,__STATIC__) )
         {
             // $static / __static__ props/methods and associated keys
             // __static__ = actual props/methods
@@ -456,7 +456,7 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
         // add $SCOPED/Method functionality as well
         for (mname in subClassProto)
         {
-            if ( subClassProto[HAS](mname) )
+            if ( HAS(subClassProto,mname) )
             {
                 method = subClassProto[ mname ];
                 if ( method instanceof Method )
@@ -494,7 +494,7 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
         }
         for (mname in __private__)
         {
-            if ( __private__[HAS](mname) )
+            if ( HAS(__private__,mname) )
             {
                 method = __private__[ mname ];
                 if ( method instanceof Method )
@@ -561,7 +561,7 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
                     // implememnt a version of Late Static Binding here
                     // to bind the $class dynamicaly on each class extension
                     // similar to PHP self:: or static:: late static binding
-                    else if ( __latestatic__[HAS]( key ) )
+                    else if ( HAS(__latestatic__, key ) )
                     {
                         //val = __latestatic__[key].factory( superClass, __private__, C );
                         continue;
@@ -600,7 +600,7 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
             // implememnt a version of Late Static Binding here
             // to bind the $class dynamicaly on each class extension
             // similar to PHP self:: or static:: late static binding
-            if ( __latestatic__[HAS]( key ) )
+            if ( HAS(__latestatic__, key ) )
             {
                 val = __latestatic__[key].factory( superClass, __private__, C );
                 prop[ key ] = {
@@ -939,9 +939,9 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
             
             var _proto = args[1] || {},
                 _protomix = {},
-                _extends = _qualifier[HAS]('Extends') ? _qualifier['Extends'] : (_qualifier[HAS]('extends') ? _qualifier['extends'] : Obj),
-                _implements = _qualifier[HAS]('Implements') ? _qualifier['Implements'] : (_qualifier[HAS]('implements') ? _qualifier['implements'] : null),
-                _mixin = _qualifier[HAS]('Mixin') ? _qualifier['Mixin'] : (_qualifier[HAS]('mixin') ? _qualifier['mixin'] : null),
+                _extends = HAS(_qualifier,'Extends') ? _qualifier['Extends'] : (HAS(_qualifier,'extends') ? _qualifier['extends'] : Obj),
+                _implements = HAS(_qualifier,'Implements') ? _qualifier['Implements'] : (HAS(_qualifier,'implements') ? _qualifier['implements'] : null),
+                _mixin = HAS(_qualifier,'Mixin') ? _qualifier['Mixin'] : (HAS(_qualifier,'mixin') ? _qualifier['mixin'] : null),
                 _protoalias = null,
                 i, l
             ;
@@ -956,7 +956,7 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
                 {
                     if ( T_OBJ === get_type( _mixin[i] ) )
                     {
-                        if ( _mixin[i][HAS]('mixin') && _mixin[i].mixin && _mixin[i].mixin[PROTO] )
+                        if ( HAS(_mixin[i],'mixin') && _mixin[i].mixin && _mixin[i].mixin[PROTO] )
                         {
                             _protoalias = Alias(
                                 _mixin[i].mixin[PROTO], 
@@ -980,7 +980,7 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
                 {
                     if ( T_OBJ === get_type( _implements[i] ) )
                     {
-                        if ( _implements[i][HAS]('implements') && _implements[i]['implements'] && _implements[i]['implements'][PROTO] )
+                        if ( HAS(_implements[i],'implements') && _implements[i]['implements'] && _implements[i]['implements'][PROTO] )
                         {
                             _protoalias = Alias(
                                 _implements[i].implements[PROTO], 
@@ -1025,7 +1025,7 @@ var undef = undefined, CONSTRUCTOR = "constructor", PROTO= "prototype", __PROTO_
 // export it
 var Classy = {
     
-    VERSION: "0.9.3",
+    VERSION: "1.0.0",
     
     PUBLIC: PUBLIC_PROP, STATIC: STATIC_PROP, LATE: LATE_BINDING, PRIVATE: PRIVATE_PROP,
     
